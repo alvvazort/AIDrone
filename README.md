@@ -27,7 +27,7 @@ Una vez reiniciado volveremos a una terminal dentro de la carpeta Firmware y eje
 
 `make px4_sitl gazebo`
 
-Con ello se compilará el entorno y una vez terminado se iniciará la interfaz de Gazebo con el drone funcionando, en la terminal podrémos utilizar comandos de buelo como `commander takeoff` y `commander land` para comprobar que funciona todo correctamente. Para ejecutar este entorno de nuevo utilizaremos `make px4_sitl gazebo`, como ya estará compilado no habrá que esperar tanto tiempo como la primera vez.
+Con ello se compilará el entorno y una vez terminado se iniciará la interfaz de Gazebo con el drone funcionando, en la terminal podremos utilizar comandos de vuelo como `commander takeoff` y `commander land` para comprobar que funciona todo correctamente. Para ejecutar este entorno de nuevo utilizaremos `make px4_sitl gazebo`, como ya estará compilado no habrá que esperar tanto tiempo como la primera vez.
 
 ### Instalación MAVSDK
 

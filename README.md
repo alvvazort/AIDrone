@@ -49,7 +49,7 @@ sudo apt install libfuse2 -y`
 
 Descargar el archivo en el siguiente enlace: https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl.AppImage
 
-Por ultimo deberemos darle permisos de escritura, para ello podemos ejecutar el siguiente comando:
+Por último deberemos darle permisos de escritura, para ello podemos ejecutar el siguiente comando:
 
 `chmod +x ./QGroundControl.AppImage`
 

@@ -16,9 +16,9 @@ Para ello hay que clonar el Firmware de PX4 e instalarlo.
 
 Cambiamos a la carpeta Firmware e instalamos.
 
-`cd Firmware
+`cd Firmware`
 
-bash ./Tools/setup/ubuntu.sh`
+`bash ./Tools/setup/ubuntu.sh`
 
 Deberemos reiniciar para que se apliquen los cambios correctamente:
 

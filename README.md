@@ -34,9 +34,11 @@ Con ello se compilará el entorno y una vez terminado se iniciará la interfaz d
 
 Instalamos con pip MAVSDK y clonamos su repositorio.
 
-`pip3 install mavsdk
-cd ~/ # To download the repository in your home directory
-git clone https://github.com/mavlink/MAVSDK-Python.git`
+`pip3 install mavsdk`
+
+`cd ~/ # To download the repository in your home directory`
+
+`git clone https://github.com/mavlink/MAVSDK-Python.git`
 
 ### Instalación QGroundControl
 

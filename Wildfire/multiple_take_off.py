@@ -34,8 +34,8 @@ async def run():
         print("-- Taking off")
         await drone.action.takeoff()
 
-        await asyncio.sleep(100000)
-    
+    await asyncio.sleep(100000)
+
     for num in range(numDrones):
         print("Drone "+str(num))
         drone = System()

@@ -16,8 +16,9 @@ Para ello hay que clonar el Firmware de PX4 e instalarlo.
 
 Cambiamos a la carpeta Firmware e instalamos.
 
-`cd Firmware
-bash ./Tools/setup/ubuntu.sh`
+`cd Firmware`
+
+`bash ./Tools/setup/ubuntu.sh`
 
 Deberemos reiniciar para que se apliquen los cambios correctamente:
 
@@ -33,19 +34,25 @@ Con ello se compilará el entorno y una vez terminado se iniciará la interfaz d
 
 Instalamos con pip MAVSDK y clonamos su repositorio.
 
-`pip3 install mavsdk
-cd ~/ # To download the repository in your home directory
-git clone https://github.com/mavlink/MAVSDK-Python.git`
+`pip3 install mavsdk`
+
+`cd ~/ # To download the repository in your home directory`
+
+`git clone https://github.com/mavlink/MAVSDK-Python.git`
 
 ### Instalación QGroundControl
 
 Primero ejecutamos esto en una terminal:
 
-`sudo usermod -a -G dialout $USER
-sudo apt-get remove modemmanager -y
-sudo apt install gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl -y
-sudo apt install libqt5gui5 -y
-sudo apt install libfuse2 -y`
+`sudo usermod -a -G dialout $USER`
+
+`sudo apt-get remove modemmanager -y`
+
+`sudo apt install gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl -y`
+
+`sudo apt install libqt5gui5 -y`
+
+`sudo apt install libfuse2 -y`
 
 Descargar el archivo en el siguiente enlace: https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl.AppImage
 

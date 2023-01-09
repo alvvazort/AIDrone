@@ -18,11 +18,6 @@ async def run():
 
         status_text_task = asyncio.ensure_future(print_status_text(drone))
 
-        print("Waiting for drone to connect...")
-        async for state in drone.core.connection_state():
-            if state.is_connected:
-                print(f"-- Connected to drone!")
-                break
 
         print("Waiting for drone to have a global position estimate...")
         async for health in drone.telemetry.health():
@@ -30,30 +25,12 @@ async def run():
             if health.is_global_position_ok and health.is_home_position_ok:
                 print("-- Global position estimate OK")
                 break
-        
-        async for armed in drone.telemetry.armed():
-            print("is armed: "+ str(armed))
-            break
 
         print("-- Arming")
         await drone.action.arm()
 
-        async for armed in drone.telemetry.armed():
-            print("is armed: "+ str(armed))
-            break
-        async for flightMode in drone.telemetry.flight_mode():
-            print("flightMode: "+ str(flightMode))
-            break
-
         print("-- Taking off")
         await drone.action.takeoff()
-
-        async for armed in drone.telemetry.armed():
-            print("is armed: "+ str(armed))
-            break
-        async for flightMode in drone.telemetry.flight_mode():
-            print("flightMode: "+ str(flightMode))
-            break
 
         drone.__del__()
 

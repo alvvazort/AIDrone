@@ -13,7 +13,8 @@ def run():
     print("Recompensas de estados:")
     print(recompensas_estados)
 
-    transición_actua = numpy.array([[1,0,0,0,0,0,0,0,0],
+    
+    transición_actua = numpy.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
                                     [0.15, 0.85, 0, 0, 0, 0, 0, 0, 0],
                                     [0.05, 0.25, 0.7, 0, 0, 0, 0, 0, 0],
                                     [0, 0.1, 0.2, 0.7, 0, 0, 0, 0, 0],
@@ -56,23 +57,41 @@ def run():
     matriz_costes = numpy.column_stack([coste_actua,
                                         coste_viaja])
 
-    recompensas_sistema = matriz_recompensas - matriz_costes  #9x1 - 9x2
+    recompensas_sistema = matriz_recompensas - matriz_costes  
     print("\nRecompensas del sistema: ")
     print(recompensas_sistema)
 
 
+    '''
+    
     wild_fire_VI = mdp.ValueIteration(
-    transitions=transiciones_sistema,
-    reward=recompensas_sistema,
-    discount=0.9,
-    epsilon=0.1)
-
+        transitions=transiciones_sistema,
+        reward=recompensas_sistema,
+        discount=0.9,
+        epsilon=0.1
+    )
+    # max_iter = (_math.log((epsilon * (1 - self.discount) / self.discount) / span ) / _math.log(self.discount * k))
     wild_fire_VI.setVerbose()
     wild_fire_VI.run()
 
     wild_fire_VI.policy
 
     for estado, i in zip(estados, wild_fire_VI.policy):
+        print(f'En el estado {estado} ejecuta la acción {acciones[i]}')
+    '''
+
+    wild_fire_PI = mdp.PolicyIteration(
+        transitions=transiciones_sistema,
+        reward=recompensas_sistema,
+        discount=0.9,
+        policy0=numpy.array([1, 1, 1, 1, 1, 1, 1, 1, 1])  # La política inicial es esperar en cada estado
+    )
+
+    wild_fire_PI.setVerbose()
+    wild_fire_PI.run()
+
+    print()
+    for estado, i in zip(estados, wild_fire_PI.policy):
         print(f'En el estado {estado} ejecuta la acción {acciones[i]}')
 
 

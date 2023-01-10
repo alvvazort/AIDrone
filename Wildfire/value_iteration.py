@@ -4,11 +4,11 @@ import numpy
 
 def run():
     
-    estados = ['M','PC2','PC3','PC4','PC5','A2', 'A3', 'A4', 'A5'] 
+    estados = ['M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
 
     acciones = ['actua','viaja']
 
-    recompensas_estados = numpy.array([-1000, 0, 0, 0, -100, 100, 100, 100, 100]) 
+    recompensas_estados = numpy.array([-1000, 0, 0, 0, 0, 0, 0, 0, 0]) 
 
     print("Recompensas de estados:")
     print(recompensas_estados)
@@ -23,12 +23,13 @@ def run():
                                     [0, 0, 0, 0, 0, 0, 0.2, 0.8, 0],
                                     [0, 0, 0, 0, 0, 0, 0, 0.2, 0.8],
                                     [0, 0, 0, 0, 0, 0, 0, 0, 1]])
+
     
     print("\nTransición actua:")
     print(transición_actua)
 
-    # ['M','PC2','PC3','PC4','PC5','A2', 'A3', 'A4', 'A5'] 
-    coste_actua = numpy.array([numpy.inf, 0, 0, 0, 0, 0, 0, 0, 0])
+    # ['M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
+    coste_actua = numpy.array([100, 0, -500, -500, -500, 0, 0, 0, 1000])
     
     transición_viaja = numpy.array([[1, 0, 0, 0, 0, 0, 0, 0, 0],
                                     [0.2, 0, 0, 0, 0, 0.8, 0, 0, 0],
@@ -43,8 +44,8 @@ def run():
                  
     print(transición_viaja)
 
-    # ['M','PC2','PC3','PC4','PC5','A2', 'A3', 'A4', 'A5'] 
-    coste_viaja = numpy.array([numpy.inf, 0, 0, 0, 0, 0, 0, 0, 0])
+    # ['M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
+    coste_viaja = numpy.array([numpy.inf, 20, 200, 200, 200, 20, 20, 20, 20])
 
     transiciones_sistema = numpy.array([transición_actua,
                                     transición_viaja])
@@ -62,7 +63,7 @@ def run():
     print(recompensas_sistema)
 
 
-    '''
+    
     
     wild_fire_VI = mdp.ValueIteration(
         transitions=transiciones_sistema,
@@ -93,6 +94,7 @@ def run():
     print()
     for estado, i in zip(estados, wild_fire_PI.policy):
         print(f'En el estado {estado} ejecuta la acción {acciones[i]}')
+    '''
 
 
 if __name__ == "__main__":

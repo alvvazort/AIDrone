@@ -34,9 +34,8 @@ def policy_iteration(transiciones_sistema, recompensas_sistema, estados, accione
         print(f'En el estado {estado} ejecuta la acción {acciones[i]}')
     return wild_fire_PI.policy
 
-def run():
+def wildfire_one_charge_one_point(policy_method):
 
-    
     estados = ['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
 
     acciones = ['actua','viaja']
@@ -97,16 +96,15 @@ def run():
     print("\nRecompensas del sistema: ")
     print(recompensas_sistema)
 
-    policy = value_iteration(transiciones_sistema, recompensas_sistema, estados, acciones)
-    #policy = policy_iteration(transiciones_sistema, recompensas_sistema, estados, acciones)
+    if policy_method == "value iteration":
+        policy = value_iteration(transiciones_sistema, recompensas_sistema, estados, acciones)
+    elif policy_method == "policy iteration":
+        policy = policy_iteration(transiciones_sistema, recompensas_sistema, estados, acciones)
+    else:
+        return "Please introduce a valid policy method"
+    return policy
     
 
 
 if __name__ == "__main__":
-    run()
-
-
-    # Parking de cursores
-    # |---------------------|
-            
-    # |---------------------|
+    wildfire_one_charge_one_point()

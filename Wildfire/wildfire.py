@@ -2,13 +2,15 @@
 
 import asyncio
 from mavsdk import System
-from mavsdk.geofence import Point, Polygon
+from mavsdk.geofence import Point
+from mavsdk.action import OrbitYawBehavior
 import datetime
+import value_and_policy_iteration
 
 PORT = 14540
 NUMDRONES = 1
 STATUS = ['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
-
+POLICY_METHOD = "value iteration"
 
 async def run():
     
@@ -32,40 +34,118 @@ async def run():
             await drone.action.land()
 
             status_text_task.cancel()
-    #TODO Hacer que se guarden los estados y no los puntos, mirar la bateria del dron
-    async def go_to(point, idDron):
-        await drone.action.goto_location(point.latitude_deg, point.longitude_deg, flying_alt, 0)
-        async for position in drone.telemetry.position():
-            if abs(position.latitude_deg-point.latitude_deg)<0.000001 and abs(position.longitude_deg-point.longitude_deg)<0.000001:
-                name_point = [k for k, v in POINTS.items() if v == point][0]
-                record[idDron].append(name_point)
-                print("Point " + name_point + " arrived at " + str(datetime.datetime.now()))
-                break
             
-    async def act(idDron):
+    async def print_battery(drone):
+        async for battery in drone.telemetry.battery():
+            print(f"{battery.remaining_percent}")
+            break
+    
+    async def get_battery(drone):
+        async for battery in drone.telemetry.battery():
+            return battery.remaining_percent
 
-        actual_point = record[idDron][-1]
-        if(actual_point == "PC"):
-            await drone.action.land()
-        else:
-            await asyncio.sleep(10)
-            print("Acting on point " + actual_point + " at " + str(datetime.datetime.now()))
+    async def print_gps_info(drone):
+        async for gps_info in drone.telemetry.gps_info():
+            print(f"GPS info: {gps_info}")
+            break
 
-        record[idDron].append(actual_point)
 
-    def AIDrone(idDron):
+    async def print_in_air(drone):
+        async for in_air in drone.telemetry.in_air():
+            print(f"In air: {in_air}")
+            break
+
+
+    async def print_position(drone):
+        async for position in drone.telemetry.position():
+            print(position)
+            break
+            
+    async def AIDrone(idDrone):
         
-        if(record[idDron][-1]== "PC"):
-            pass
-        else:
-            pass
+        async def go_to(idDrone):
+            last_point = record[idDrone][-1]
+            #TODO Cuando haya más puntos habría que cambiarlo
+            if(last_point=="PC"): #Si está en un punto, va hacia el otro punto 
+                point= POINTS["A"]
+            else:
+                point= POINTS["PC"]
+
+            await drone.action.goto_location(point.latitude_deg, point.longitude_deg, flying_alt, 0)
+            battery = round(await get_battery(drone)*100,2)    
+            name_point = [k for k, v in POINTS.items() if v == point][0]
+            print("Going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
+            
+            async for position in drone.telemetry.position():
+                #Comprueba que llega al punto    
+                if abs(position.latitude_deg-point.latitude_deg)<0.000001 and abs(position.longitude_deg-point.longitude_deg)<0.000001: 
+                    record[idDrone].append(name_point) # Guarda en el historial en que punto está
+                    break
+        
+        async def act(idDrone):
+            actual_point = record[idDrone][-1]
+            battery = round(await get_battery(drone)*100,2)    
+
+            #TODO Mirar como se carga la bateria cuando este en suelo
+            if(actual_point == "PC"):
+                print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
+                await drone.action.land()
+
+                i=0
+                async for in_air in drone.telemetry.in_air():
+                    
+                    if(i%3==0):
+                        print(f"Trying to land, still in air: {in_air}")
+                    i = i+1
+                    break
+            elif(actual_point == "M"):
+                print("Mayday! Mayday! Drone without battery " + "(" + await get_status() + ")")
+            else:
+
+                await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = POINTS[actual_point].latitude_deg, longitude_deg = POINTS[actual_point].longitude_deg, absolute_altitude_m = absolute_altitude + 20)
+                print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
+                await asyncio.sleep(10)
+
+            record[idDrone].append(actual_point)
+            
+        async def get_battery_status(drone):
+            battery= await get_battery(drone)
+            battery_levels = {1 : 0.20, 2: 0.40, 3: 0.60, 4: 0.80, 5: 1.0}
+            
+            battery_status = [k for k, v in battery_levels.items() if v >= battery][0]
+            return battery_status
+
+        #['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
+        async def get_status():
+            battery_status = await get_battery_status(drone)
+            point = record[idDrone][-1]
+            
+            if(battery_status==1):
+                if(record[idDrone][-1]=="M"):
+                    return "F"
+                record[idDrone].append("M")
+                return "M"
+            
+            status = point+str(battery_status)
+            return status
+            
+        policy = value_and_policy_iteration.wildfire_one_charge_one_point(POLICY_METHOD)
+        actions_functions = [act,go_to]
+        actions = ["Actua", "Viaja"]
+        
+        status = await get_status()
+        while(status != "M"):
+            status = await get_status()
+            action=actions_functions[policy[STATUS.index(status)]]
+
+            await action(idDrone)
 
         
-    for idDron in range(NUMDRONES):
+    for idDrone in range(NUMDRONES):
         record.append(["PC"])
-        print("Drone "+str(idDron))
+        print("Drone "+str(idDrone))
         drone = System()
-        portDrone= idDron+PORT
+        portDrone= idDrone+PORT
         await drone.connect(system_address="udp://:"+str(portDrone))
 
         status_text_task = asyncio.ensure_future(print_status_text(drone))
@@ -75,7 +155,7 @@ async def run():
             if health.is_global_position_ok and health.is_home_position_ok:
                 print("-- Global position estimate OK")
                 break
-        if(idDron==0):
+        if(idDrone==0):
             # Fetch the home location coordinates, in order to set a boundary around the home location
             print("Fetching home location coordinates and altitude...")
             async for terrain_info in drone.telemetry.home():
@@ -94,11 +174,12 @@ async def run():
         print("-- Arming")
         await drone.action.arm()
         
+        
         print("-- Taking off")
         await drone.action.takeoff()
-
-        AIDrone()
         
+        await AIDrone(idDrone)
+
         #drone.__del__()
 
 

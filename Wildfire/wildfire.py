@@ -2,15 +2,24 @@
 
 import asyncio
 from mavsdk import System
+<<<<<<< HEAD
 from mavsdk.geofence import Point
 from mavsdk.action import OrbitYawBehavior
 import datetime
 import value_and_policy_iteration
+=======
+from mavsdk.geofence import Point, Polygon
+import datetime
+>>>>>>> main
 
 PORT = 14540
 NUMDRONES = 1
 STATUS = ['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
+<<<<<<< HEAD
 POLICY_METHOD = "value iteration"
+=======
+
+>>>>>>> main
 
 async def run():
     
@@ -34,6 +43,7 @@ async def run():
             await drone.action.land()
 
             status_text_task.cancel()
+<<<<<<< HEAD
             
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
@@ -146,6 +156,42 @@ async def run():
         print("Drone "+str(idDrone))
         drone = System()
         portDrone= idDrone+PORT
+=======
+    #TODO Hacer que se guarden los estados y no los puntos, mirar la bateria del dron
+    async def go_to(point, idDron):
+        await drone.action.goto_location(point.latitude_deg, point.longitude_deg, flying_alt, 0)
+        async for position in drone.telemetry.position():
+            if abs(position.latitude_deg-point.latitude_deg)<0.000001 and abs(position.longitude_deg-point.longitude_deg)<0.000001:
+                name_point = [k for k, v in POINTS.items() if v == point][0]
+                record[idDron].append(name_point)
+                print("Point " + name_point + " arrived at " + str(datetime.datetime.now()))
+                break
+            
+    async def act(idDron):
+
+        actual_point = record[idDron][-1]
+        if(actual_point == "PC"):
+            await drone.action.land()
+        else:
+            await asyncio.sleep(10)
+            print("Acting on point " + actual_point + " at " + str(datetime.datetime.now()))
+
+        record[idDron].append(actual_point)
+
+    def AIDrone(idDron):
+        
+        if(record[idDron][-1]== "PC"):
+            pass
+        else:
+            pass
+
+        
+    for idDron in range(NUMDRONES):
+        record.append(["PC"])
+        print("Drone "+str(idDron))
+        drone = System()
+        portDrone= idDron+PORT
+>>>>>>> main
         await drone.connect(system_address="udp://:"+str(portDrone))
 
         status_text_task = asyncio.ensure_future(print_status_text(drone))
@@ -155,7 +201,11 @@ async def run():
             if health.is_global_position_ok and health.is_home_position_ok:
                 print("-- Global position estimate OK")
                 break
+<<<<<<< HEAD
         if(idDrone==0):
+=======
+        if(idDron==0):
+>>>>>>> main
             # Fetch the home location coordinates, in order to set a boundary around the home location
             print("Fetching home location coordinates and altitude...")
             async for terrain_info in drone.telemetry.home():
@@ -177,9 +227,15 @@ async def run():
         
         print("-- Taking off")
         await drone.action.takeoff()
+<<<<<<< HEAD
         
         await AIDrone(idDrone)
 
+=======
+
+        AIDrone()
+        
+>>>>>>> main
         #drone.__del__()
 
 

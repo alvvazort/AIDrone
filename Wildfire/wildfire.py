@@ -18,8 +18,7 @@ async def run():
     longitude = 0
     absolute_altitude = 0
     flying_alt = 80
-    #TODO Cambiar a Boolean
-    is_flying = 0
+    is_flying = False
     record = []
 
 
@@ -70,30 +69,23 @@ async def run():
             
             
     async def AIDrone(idDrone):
-        '''
-        
-        def get_in_air():
-            global in_air
-            return in_air
-        def set_in_air(bool):
-            global in_air
-            in_air=bool
-        '''
+
         async def go_to(idDrone):
 
             last_point = record[idDrone][-1]
-            #TODO Cuando haya más puntos habría que cambiarlo
             if(last_point=="PC"): #Si está en un punto, va hacia el otro punto 
                 point= POINTS["A"]
             else:
                 point= POINTS["PC"]
             global is_flying
-            if(is_flying==0):
+            if not is_flying:
+                print("-- Arming")
+                await drone.action.arm()
                 print("-- Taking off")
                 await drone.action.takeoff()
                 
             await drone.action.goto_location(point.latitude_deg, point.longitude_deg, flying_alt, 0)
-            is_flying=1
+            is_flying=True
 
             battery = round(await get_battery(drone)*100,2)    
             name_point = [k for k, v in POINTS.items() if v == point][0]
@@ -101,7 +93,7 @@ async def run():
             
             async for position in drone.telemetry.position():
                 #Comprueba que llega al punto    
-                if abs(position.latitude_deg-point.latitude_deg)<0.000001 and abs(position.longitude_deg-point.longitude_deg)<0.000001: 
+                if abs(position.latitude_deg-point.latitude_deg)<0.00001 and abs(position.longitude_deg-point.longitude_deg)<0.00001: 
                     record[idDrone].append(name_point) # Guarda en el historial en que punto está
                     break
         
@@ -112,19 +104,19 @@ async def run():
             global is_flying
 
             if(actual_point == "PC"):
-                if is_flying == 1:      #Se optimiza para que cargue más rapido cuando esté en el suelo
+                if is_flying:      #Se optimiza para que cargue más rapido cuando esté en el suelo
                     print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
                     await drone.action.land()
 
                     i=0
                     async for in_air_local in drone.telemetry.in_air():
                         if(i%20==0):
-                            print("Trying to land, still in air. Still " + str(await get_altitude(drone)) + " from ground.")
+                            print("Trying to land, still in air. Still " + str(round(await get_altitude(drone),2)) + " from ground.")
                         i = i+1
                         if not in_air_local:
-                            is_flying=0
+                            is_flying=False
                             break
-                print("Charging battery at " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                print("Charging battery at " + actual_point + " with " + str(round(await get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
 
 
             elif(actual_point == "M"):
@@ -139,8 +131,8 @@ async def run():
             
         async def get_battery_status(drone):
             battery= await get_battery(drone)
-            #TODO AJUSTAR los niveles
-            battery_levels = {1 : 0.17, 2: 0.50, 3: 0.60, 4: 0.80, 5: 1.0}
+            #TODO Ver como funcionan estos valores 
+            battery_levels = {1 : 0.16, 2: 0.45, 3: 0.60, 4: 0.8, 5: 1.0}
             
             battery_status = [k for k, v in battery_levels.items() if v >= battery][0]
             return battery_status
@@ -149,12 +141,14 @@ async def run():
         async def get_status():
             battery_status = await get_battery_status(drone)
             point = record[idDrone][-1]
-            
+            global is_flying
+
             if(battery_status==1):
                 if(record[idDrone][-1]=="M"):
                     return "F"
-                record[idDrone].append("M")
-                return "M"
+                if is_flying:
+                    record[idDrone].append("M")
+                    return "M"
             
             status = point+str(battery_status)
             return status
@@ -163,7 +157,7 @@ async def run():
         actions_functions = [act,go_to]
         actions = ["Actua", "Viaja"]
         global is_flying
-        is_flying = 1
+        is_flying = True
 
         status = await get_status()
         while(status != "M"):
@@ -187,7 +181,6 @@ async def run():
                 print("-- Global position estimate OK")
                 break
         if(idDrone==0):
-            # Fetch the home location coordinates, in order to set a boundary around the home location
             print("Fetching home location coordinates and altitude...")
             async for terrain_info in drone.telemetry.home():
                 latitude = terrain_info.latitude_deg

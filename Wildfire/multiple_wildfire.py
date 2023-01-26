@@ -10,11 +10,11 @@ import datetime
 import value_and_policy_iteration
 
 PORT = 14540
-NUMDRONES = 2
+NUMDRONES = 3
 STATUS = ['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
 POLICY_METHOD = "value iteration"
 
-async def run():
+class Wildfire:
     
     latitude = 0
     longitude = 0
@@ -66,15 +66,15 @@ async def run():
         async for position in drone.telemetry.position():
             return position.relative_altitude_m
     
-    async def AIDrone(idDrone, drone):
-
+    async def AIDrone(idDrone, drone, POINTS):
         async def go_to(idDrone):
 
-            last_point = record[idDrone][-1]
+            last_point = Wildfire.record[idDrone][-1]
+            
             if(last_point=="PC"): #Si está en un punto, va hacia el otro punto 
-                point= POINTS["A"]
+                point= Wildfire.POINTS["A"]
             else:
-                point= POINTS["PC"]
+                point= Wildfire.POINTS["PC"]
             global is_flying
             if not is_flying:
                 print("-- Arming")
@@ -82,53 +82,54 @@ async def run():
                 print("-- Taking off")
                 await drone.action.takeoff()
                 
-            await drone.action.goto_location(point.latitude_deg, point.longitude_deg, flying_alt, 0)
+            await drone.action.goto_location(point.latitude_deg, point.longitude_deg, Wildfire.flying_alt + idDrone, 0)
             is_flying=True
 
-            battery = round(await get_battery(drone)*100,2)    
+            battery = round(await Wildfire.get_battery(drone)*100,2)    
             name_point = [k for k, v in POINTS.items() if v == point][0]
-            print("Going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
+            print("Dron " + str(idDrone) + " going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
             
             async for position in drone.telemetry.position():
                 #Comprueba que llega al punto    
                 if abs(position.latitude_deg-point.latitude_deg)<0.00001 and abs(position.longitude_deg-point.longitude_deg)<0.00001: 
-                    record[idDrone].append(name_point) # Guarda en el historial en que punto está
+                    Wildfire.record[idDrone].append(name_point) # Guarda en el historial en que punto está
                     break
         
         async def act(idDrone):
-            actual_point = record[idDrone][-1]
-            battery = round(await get_battery(drone)*100,2)
+            actual_point = Wildfire.record[idDrone][-1]
+            battery = round(await Wildfire.get_battery(drone)*100,2)
             actual_status = await get_status()    
             global is_flying
 
             if(actual_point == "PC"):
                 if is_flying:      #Se optimiza para que cargue más rapido cuando esté en el suelo
-                    print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                    print("Dron " + str(idDrone) + " acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
                     await drone.action.land()
 
                     i=0
                     async for in_air_local in drone.telemetry.in_air():
                         if(i%20==0):
-                            print("Trying to land, still in air. Still " + str(round(await get_altitude(drone),2)) + " from ground.")
+                            print("Dron " + str(idDrone) + " trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
                         i = i+1
                         if not in_air_local:
                             is_flying=False
                             break
-                print("Charging battery at " + actual_point + " with " + str(round(await get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
+                print("Dron " + str(idDrone) + " charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
 
 
             elif(actual_point == "M"):
-                print("Mayday! Mayday! Drone without battery " + "(" + actual_status + ")")
+                print("Dron " + str(idDrone) + " Mayday! Mayday! Drone without battery " + "(" + actual_status + ")")
 
             else:
-                print("Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
-                await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = POINTS[actual_point].latitude_deg, longitude_deg = POINTS[actual_point].longitude_deg, absolute_altitude_m = absolute_altitude + 20)
+                print("Dron " + str(idDrone) + " monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                #TODO MIRAR LA ORBITA QUE ESTAN HACIENDO 
+                await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude+idDrone+20)
                 await asyncio.sleep(10)
 
-            record[idDrone].append(actual_point)
+            Wildfire.record[idDrone].append(actual_point)
             
         async def get_battery_status(drone):
-            battery= await get_battery(drone)
+            battery= await Wildfire.get_battery(drone)
             #TODO Ver como funcionan estos valores 
             battery_levels = {1 : 0.16, 2: 0.45, 3: 0.60, 4: 0.8, 5: 1.0}
             
@@ -138,14 +139,14 @@ async def run():
         #['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
         async def get_status():
             battery_status = await get_battery_status(drone)
-            point = record[idDrone][-1]
+            point = Wildfire.record[idDrone][-1]
             global is_flying
 
             if(battery_status==1):
-                if(record[idDrone][-1]=="M"):
+                if(Wildfire.record[idDrone][-1]=="M"):
                     return "F"
                 if is_flying:
-                    record[idDrone].append("M")
+                    Wildfire.record[idDrone].append("M")
                     return "M"
             
             status = point+str(battery_status)
@@ -166,51 +167,58 @@ async def run():
             await action(idDrone)
 
     async def drone_control(idDrone):
-        record.append(["PC"])
+        Wildfire.record.append(["PC"])
         print("Drone "+str(idDrone))
-        drone = System()
-        portDrone= idDrone+PORT
-        await drone.connect(system_address="udp://:"+str(portDrone))
-
-        status_text_task = asyncio.ensure_future(print_status_text(drone))
+        portSys = 50050 + idDrone
+        drone = System(mavsdk_server_address="127.0.0.1", port=portSys)
+        
+        await drone.connect()
 
         print("Waiting for drone to have a global position estimate...")
         async for health in drone.telemetry.health():
             if health.is_global_position_ok and health.is_home_position_ok:
                 print("-- Global position estimate OK")
                 break
-        if(idDrone==0):
-            print("Fetching home location coordinates and altitude...")
-            async for terrain_info in drone.telemetry.home():
-                latitude = terrain_info.latitude_deg
-                longitude = terrain_info.longitude_deg
-                absolute_altitude = terrain_info.absolute_altitude_m
-                flying_alt = absolute_altitude + 40
-                PC = Point(latitude, longitude)
-                A = Point(latitude + 0.001, longitude - 0.001)
-                POINTS= {
-                    "PC": PC,
-                    "A": A
-                }
-                break
         
         print("-- Arming")
         await drone.action.arm()
         
-        
         print("-- Taking off")
         await drone.action.takeoff()
-        
-        await AIDrone(idDrone, drone)
 
-        #drone.__del__()
+        await Wildfire.AIDrone(idDrone, drone, Wildfire.POINTS)
+
+    async def calculate_coordinates():
+        portSys = 50050 
+        drone = System(mavsdk_server_address="127.0.0.1", port=portSys)
+        
+        await drone.connect()
+        
+        print("Fetching home location coordinates and altitude...")
+        async for terrain_info in drone.telemetry.home():
+            latitude = terrain_info.latitude_deg
+            longitude = terrain_info.longitude_deg
+            absolute_altitude = terrain_info.absolute_altitude_m
+            flying_alt = absolute_altitude + 40
+            PC = Point(latitude, longitude)
+            A = Point(latitude + 0.001, longitude - 0.001)
+            Wildfire.POINTS= {
+                "PC": PC,
+                "A": A
+            }
+
+            break
+
+        drone.__del__()
         
     ### Código a ejecutar en run() ###
 
     #Paralelizamos el proceso drone_control           
-  
-    pool = Pool(processes=NUMDRONES)
-    result = pool.map(drone_control, range(NUMDRONES))
+    def run():
+        loop = asyncio.get_event_loop()
+        for i in range(NUMDRONES):
+            asyncio.ensure_future(Wildfire.drone_control(i))
+        loop.run_forever()
 
 async def print_status_text(drone):
     try:
@@ -230,4 +238,5 @@ async def get_drones():
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(run())
+    loop.run_until_complete(Wildfire.calculate_coordinates())
+    Wildfire.run()

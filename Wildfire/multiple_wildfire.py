@@ -122,15 +122,15 @@ class Wildfire:
 
             else:
                 print("Dron " + str(idDrone) + " monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
-                #TODO MIRAR LA ORBITA QUE ESTAN HACIENDO 
-                await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude+idDrone+20)
+                print(Wildfire.absolute_altitude+idDrone*15+20)
+                if(idDrone==0):
+                    await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude+idDrone*15+20)
                 await asyncio.sleep(10)
 
             Wildfire.record[idDrone].append(actual_point)
             
         async def get_battery_status(drone):
             battery= await Wildfire.get_battery(drone)
-            #TODO Ver como funcionan estos valores 
             battery_levels = {1 : 0.16, 2: 0.45, 3: 0.60, 4: 0.8, 5: 1.0}
             
             battery_status = [k for k, v in battery_levels.items() if v >= battery][0]
@@ -199,7 +199,7 @@ class Wildfire:
             latitude = terrain_info.latitude_deg
             longitude = terrain_info.longitude_deg
             absolute_altitude = terrain_info.absolute_altitude_m
-            flying_alt = absolute_altitude + 40
+            Wildfire.flying_alt = absolute_altitude + 40
             PC = Point(latitude, longitude)
             A = Point(latitude + 0.001, longitude - 0.001)
             Wildfire.POINTS= {

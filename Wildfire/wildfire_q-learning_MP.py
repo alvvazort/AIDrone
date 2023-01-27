@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import asyncio
+import random
 from mavsdk import System
 from mavsdk.geofence import Point
 from mavsdk.action import OrbitYawBehavior
@@ -12,7 +13,7 @@ import json
 PORT = 14540
 NUMDRONES = 1
 NUMPOINTS = 2
-STATUS = ['F','M','PC2', 'PC3', 'PC4', 'PC5'] 
+STATUS = ['F','M'] 
 EPSILON = 0.9
 DISCOUNT_FACTOR = 0.9
 LEARNING_RATE = 0.9
@@ -25,20 +26,11 @@ async def run():
     flying_alt = 80
     is_flying = False
     record = []
-
-    #TODO QUITAR A
     PC = Point(latitude_origin, longitude_origin)
-    A = Point(latitude_origin + 0.001, longitude_origin - 0.001)
     POINTS = {}
     q_values = {}
     
-    # Si existe el json con el qvalue lo carga
-    if os.path.isfile("q_values.json"):
-        with open("q_values.json") as json_file:
-            q_values = json.load(json_file)
-    else:
-        q_values= {'F':[0,0],'M':[0,0],'A2':[0,0],'A3':[0,0],'A4':[0,0],'A5':[0,0],'PC2':[0,0], 'PC3':[0,0], 'PC4':[0,0], 'PC5':[0,0]}
-    rewards = {'F':0,'M':-5000,'A2':20,'A3':20,'A4':20,'A5':20,'PC2':0, 'PC3':0, 'PC4':0, 'PC5':0}
+    rewards = {}
 
     async def land_all(status_text_task):
         for num in range(NUMDRONES):
@@ -81,14 +73,49 @@ async def run():
 
     def update_constants():
         def update_points():
-            POINTS
+            PC = Point(latitude_origin, longitude_origin)
+            POINTS["PC"] = PC
+
+            points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+            for num_point in range(NUMPOINTS):
+                latitude_point = num_point * random.random() * 0.001 + latitude_origin
+                longitude_point = num_point * random.random() * 0.001  + longitude_origin
+                POINTS[points[num_point]] = Point(latitude_point, longitude_point)
 
         def update_status():
-            STATUS
+            for point in list(POINTS.keys()):
+                for battery_level in range(2,6):
+                    status = point + str(battery_level)
+                    STATUS.append(status)
+        
+        def update_q_values():
+            # Si existe el json con el qvalue lo carga
+            if os.path.isfile("q_values.json"):
+                with open("q_values.json") as json_file:
+                    q_values = json.load(json_file)
+            else:
+                for status in STATUS:
+                    q_values[status]=np.zeros(len(POINTS)) # Un cero por cada go_to a cada punto -1 por go_to a si mismo + 1 por act
 
+        def update_rewards():
+            for status in STATUS:
+                if status == "M":
+                    rewards[status]= -5000
+                elif "PC" in status or status == "F":
+                    rewards[status]= 0
+                else:
+                    rewards[status]= 20
+                    
+        def update_actions():
+            #TODO
+            pass
 
-        update_status()         
-            
+        update_points()
+        update_status()
+        update_q_values()   
+        update_rewards()
+        update_actions()
+        
     async def AIDrone(idDrone, episode):
 
         async def go_to(idDrone):
@@ -148,15 +175,12 @@ async def run():
             
         async def get_battery_status(drone):
             battery= await get_battery(drone)
-            #TODO Ver como funcionan estos valores 
             battery_levels = {1 : 0.16, 2: 0.45, 3: 0.60, 4: 0.8, 5: 1.0}
             
             battery_status = [k for k, v in battery_levels.items() if v >= battery][0]
             return battery_status
 
         async def get_status():
-        #['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
-
             battery_status = await get_battery_status(drone)
             point = record[idDrone][-1]
             global is_flying
@@ -255,12 +279,6 @@ async def run():
         longitude_origin = terrain_info.longitude_deg
         absolute_altitude_origin = terrain_info.absolute_altitude_m
         flying_alt = absolute_altitude_origin + 40
-        PC = Point(latitude_origin, longitude_origin)
-        A = Point(latitude_origin + 0.001, longitude_origin - 0.001)
-        POINTS= {
-            "PC": PC,
-            "A": A
-        }
         break
 
     update_constants()

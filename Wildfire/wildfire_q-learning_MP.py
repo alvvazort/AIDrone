@@ -11,23 +11,24 @@ import json
 
 PORT = 14540
 NUMDRONES = 1
-STATUS = ['F','M','A2','A3','A4','A5','PC2', 'PC3', 'PC4', 'PC5'] 
+NUMPOINTS = 2
+STATUS = ['F','M','PC2', 'PC3', 'PC4', 'PC5'] 
 EPSILON = 0.9
 DISCOUNT_FACTOR = 0.9
 LEARNING_RATE = 0.9
 
 async def run():
     
-    latitude = 0
-    longitude = 0
-    absolute_altitude = 0
+    latitude_origin = 0
+    longitude_origin = 0
+    absolute_altitude_origin = 0
     flying_alt = 80
     is_flying = False
     record = []
 
-
-    PC = Point(latitude, longitude)
-    A = Point(latitude + 0.001, longitude - 0.001)
+    #TODO QUITAR A
+    PC = Point(latitude_origin, longitude_origin)
+    A = Point(latitude_origin + 0.001, longitude_origin - 0.001)
     POINTS = {}
     q_values = {}
     
@@ -77,7 +78,16 @@ async def run():
     async def get_altitude(drone):
         async for position in drone.telemetry.position():
             return position.relative_altitude_m
-            
+
+    def update_constants():
+        def update_points():
+            POINTS
+
+        def update_status():
+            STATUS
+
+
+        update_status()         
             
     async def AIDrone(idDrone, episode):
 
@@ -131,7 +141,7 @@ async def run():
 
             else:
                 print("Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
-                await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = POINTS[actual_point].latitude_deg, longitude_deg = POINTS[actual_point].longitude_deg, absolute_altitude_m = absolute_altitude + 20)
+                await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = POINTS[actual_point].latitude_deg, longitude_deg = POINTS[actual_point].longitude_deg, absolute_altitude_m = absolute_altitude_origin + 20)
                 await asyncio.sleep(10)
 
             record[idDrone].append(actual_point)
@@ -241,17 +251,20 @@ async def run():
 
     print("Fetching home location coordinates and altitude...")
     async for terrain_info in drone.telemetry.home():
-        latitude = terrain_info.latitude_deg
-        longitude = terrain_info.longitude_deg
-        absolute_altitude = terrain_info.absolute_altitude_m
-        flying_alt = absolute_altitude + 40
-        PC = Point(latitude, longitude)
-        A = Point(latitude + 0.001, longitude - 0.001)
+        latitude_origin = terrain_info.latitude_deg
+        longitude_origin = terrain_info.longitude_deg
+        absolute_altitude_origin = terrain_info.absolute_altitude_m
+        flying_alt = absolute_altitude_origin + 40
+        PC = Point(latitude_origin, longitude_origin)
+        A = Point(latitude_origin + 0.001, longitude_origin - 0.001)
         POINTS= {
             "PC": PC,
             "A": A
         }
         break
+
+    update_constants()
+
     record.append([])
     for episode in range(100):
         record[0].append("PC")

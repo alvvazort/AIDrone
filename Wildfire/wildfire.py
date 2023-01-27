@@ -131,7 +131,7 @@ async def run():
             
         async def get_battery_status(drone):
             battery= await get_battery(drone)
-            #TODO Ver como funcionan estos valores 
+            
             battery_levels = {1 : 0.16, 2: 0.45, 3: 0.60, 4: 0.8, 5: 1.0}
             
             battery_status = [k for k, v in battery_levels.items() if v >= battery][0]

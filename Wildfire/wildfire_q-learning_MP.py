@@ -84,6 +84,7 @@ async def run():
 
         def update_status():
             for point in list(POINTS.keys()):
+                #TODO CAMBIAR A MAS ESTADOS
                 for battery_level in range(2,6):
                     status = point + str(battery_level)
                     STATUS.append(status)
@@ -117,7 +118,7 @@ async def run():
         update_actions()
         
     async def AIDrone(idDrone, episode):
-
+        #TODO CAMBIAR POR COMPLETO
         async def go_to(idDrone):
 
             last_point = record[idDrone][-1]
@@ -175,6 +176,7 @@ async def run():
             
         async def get_battery_status(drone):
             battery= await get_battery(drone)
+            # TODO CAMBIAR A MAS ESTADOS = {1 : 0.16, 2: 0.25, 3: 0.35, 4: 0.45, 5:0.55 , 6: 0.65, 7: 0.75, 8: 0.85, 9: 0.95 , 10: 1.0}
             battery_levels = {1 : 0.16, 2: 0.45, 3: 0.60, 4: 0.8, 5: 1.0}
             
             battery_status = [k for k, v in battery_levels.items() if v >= battery][0]
@@ -230,6 +232,7 @@ async def run():
             await asyncio.sleep(4)
             print("Starting new episode - Episode " + str(episode+1))
 
+        #TODO CAMBIAR A MAS FUNCIONES
         actions_functions = [act,go_to]
         global is_flying
         is_flying = True
@@ -284,7 +287,7 @@ async def run():
     update_constants()
 
     record.append([])
-    for episode in range(100):
+    for episode in range(20):
         record[0].append("PC")
         print("-- Arming")
         await drone.action.arm()
@@ -294,7 +297,6 @@ async def run():
         await AIDrone(0,episode)
 
     print("Training completed")
-    print(q_values)
 
 
 async def print_status_text(drone):

@@ -6,6 +6,7 @@ from mavsdk import System
 from mavsdk.geofence import Point
 from mavsdk.action import OrbitYawBehavior
 import datetime
+from datetime import timedelta
 import numpy as np
 import os
 import json
@@ -28,9 +29,11 @@ class Wildfire:
     record = []
     PC = Point(latitude_origin, longitude_origin)
     POINTS = {}
+    points_time = {}
     q_values = {}
     actions_functions = []
     rewards = {}
+    last_action = []
 
     async def land_all(status_text_task):
         for num in range(NUMDRONES):
@@ -70,7 +73,7 @@ class Wildfire:
     async def get_altitude(drone):
         async for position in drone.telemetry.position():
             return position.relative_altitude_m
-
+                
     def update_constants():
         def update_points():
             PC = Point(Wildfire.latitude_origin, Wildfire.longitude_origin)
@@ -78,8 +81,8 @@ class Wildfire:
 
             points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
             for num_point in range(NUMPOINTS):
-                latitude_point = num_point * random.random() * 0.001 + Wildfire.latitude_origin
-                longitude_point = num_point * random.random() * 0.001  + Wildfire.longitude_origin
+                latitude_point = (num_point+1) * random.random() * 0.001 + Wildfire.latitude_origin
+                longitude_point = (num_point+1) * random.random() * 0.001  + Wildfire.longitude_origin
                 Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
 
         def update_status():
@@ -89,7 +92,6 @@ class Wildfire:
                     STATUS.append(status)
         
         def update_q_values():
-            
             # Si existe el json con los qvalues lo carga
             if os.path.isfile("q_values.json"):
                 with open("q_values.json") as json_file:
@@ -112,13 +114,46 @@ class Wildfire:
             Wildfire.actions_functions.append("act")
             for point in list(Wildfire.POINTS.keys()):
                 Wildfire.actions_functions.append("go_to_" + point)
-        
+  
         update_points()
         update_status()
         update_q_values()
         update_rewards()
         update_actions()
         
+    def update_points_time():
+            for point in list(Wildfire.POINTS.keys()):
+                Wildfire.points_time[point]= datetime.datetime.now().strftime('%H:%M:%S')
+
+    def get_updated_rewards(idDrone, status):
+
+        if status == "M":
+            return -5000
+        elif status == "F":
+            return 0
+        else: #Calcular recompensa en función del tiempo pasado si se vigila un punto
+            point = Wildfire.record[idDrone][-1]
+            now = datetime.datetime.now().strftime('%H:%M:%S')
+            monitorized_time = Wildfire.points_time[point]
+            fecha_now = datetime.datetime.strptime(now, '%H:%M:%S')
+            fecha_monitorized_time = datetime.datetime.strptime(monitorized_time, '%H:%M:%S')
+            
+            
+            diff = (fecha_now - fecha_monitorized_time)/ timedelta(minutes=1) 
+
+            if Wildfire.last_action[idDrone] == "go_to":
+                if Wildfire.record[idDrone][-1] == Wildfire.record[idDrone][-2]:
+                    return -20
+                else:
+                    reward = Wildfire.rewards[status]
+            else:
+                if(status == "PC10"):
+                    reward= -50
+                else:
+                    reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status]
+                Wildfire.points_time[point] = now
+            return reward
+
     async def AIDrone(idDrone,drone, episode):
 
         async def go_to(idDrone, point):
@@ -141,6 +176,7 @@ class Wildfire:
                 #Comprueba que llega al punto    
                 if abs(position.latitude_deg-point.latitude_deg)<0.00001 and abs(position.longitude_deg-point.longitude_deg)<0.00001: 
                     Wildfire.record[idDrone].append(name_point) # Guarda en el historial en que punto está
+                    Wildfire.last_action[idDrone] = "go_to"
                     break
         
         async def act(idDrone):
@@ -169,7 +205,8 @@ class Wildfire:
                 await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude_origin + 20)
                 await asyncio.sleep(10)
 
-            Wildfire.record[idDrone].append(actual_point)
+            #Wildfire.record[idDrone].append(actual_point)     solo se añade cuando hace go_to
+            Wildfire.last_action[idDrone] = "act"
             
         async def get_battery_status(drone):
             battery= await Wildfire.get_battery(drone)
@@ -201,7 +238,7 @@ class Wildfire:
             if np.random.random() < epsilon:
                 return np.argmax(Wildfire.q_values[state])
             else: #choose a random action
-                return np.random.randint(NUMPOINTS+2) # Un posibilidad por cada go_to a cada punto -1 por go_to a si mismo + 1 por act + 1 por PC
+                return np.random.randint(NUMPOINTS+2) # Un posibilidad por cada go_to a cada punto + 1 por act + 1 por PC
         
         async def get_next_status(action_index, idDrone):
             action=Wildfire.actions_functions[action_index]
@@ -232,6 +269,7 @@ class Wildfire:
             await asyncio.sleep(4)
             print("Starting new episode - Episode " + str(episode+1))
 
+        
         global is_flying
         is_flying = True
 
@@ -249,7 +287,7 @@ class Wildfire:
             status = await get_next_status(action_index, idDrone)
 
             #receive the reward for moving to the new state, and calculate the temporal difference
-            reward = Wildfire.rewards[status]
+            reward = Wildfire.get_updated_rewards(idDrone, status)
 
             old_q_value = Wildfire.q_values[old_status][action_index]
             temporal_difference = reward + (DISCOUNT_FACTOR * np.max(Wildfire.q_values[status])) - old_q_value
@@ -257,7 +295,7 @@ class Wildfire:
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
             Wildfire.q_values[old_status][action_index] = new_q_value #actualización
             with open("q_values.json", 'w') as outfile:
-                json.dump(Wildfire.q_values, outfile) #actualización en json
+                json.dump(Wildfire.q_values, outfile, indent=1) #actualización en json
 
         await reset_episode(drone, episode)
 
@@ -284,9 +322,10 @@ class Wildfire:
             break
 
         Wildfire.update_constants()
-
         Wildfire.record.append([])
+        Wildfire.last_action.append([])
         for episode in range(20):
+            Wildfire.update_points_time()
             Wildfire.record[0].append("PC")
             print("-- Arming")
             await drone.action.arm()

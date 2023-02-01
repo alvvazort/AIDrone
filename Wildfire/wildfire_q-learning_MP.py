@@ -76,15 +76,29 @@ class Wildfire:
                 
     def update_constants():
         def update_points():
-            PC = Point(Wildfire.latitude_origin, Wildfire.longitude_origin)
-            Wildfire.POINTS["PC"] = PC
-
-            points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
-            for num_point in range(NUMPOINTS):
-                latitude_point = (num_point+1) * random.random() * 0.001 + Wildfire.latitude_origin
-                longitude_point = (num_point+1) * random.random() * 0.001  + Wildfire.longitude_origin
-                Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
-
+            
+            if os.path.isfile("points_MP.json"):
+                with open("points_MP.json") as json_file:
+                    coordenadas = json.load(json_file)
+                    for point in coordenadas:
+                        Wildfire.POINTS[point] = Point(coordenadas[point][0],coordenadas[point][1])
+                    
+            else:
+                PC = Point(Wildfire.latitude_origin, Wildfire.longitude_origin)
+                Wildfire.POINTS["PC"] = PC
+                coordenadas = {}
+                coordenadas["PC"] = [Wildfire.latitude_origin, Wildfire.longitude_origin]
+                
+                points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+                for num_point in range(NUMPOINTS):
+                    latitude_point =  Wildfire.latitude_origin - (num_point*0.2+1) * random.random() * 0.001        
+                    longitude_point = Wildfire.longitude_origin + (num_point*0.2+1) *  random.randint(-1,1) * random.random() * 0.001       
+                    Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
+                    coordenadas[points[num_point]] = [latitude_point, longitude_point]
+                
+                with open("points_MP.json", 'w') as outfile:
+                    json.dump(coordenadas, outfile, indent=1) #actualización en json
+                    
         def update_status():
             for point in list(Wildfire.POINTS.keys()):
                 for battery_level in range(2,11):
@@ -93,8 +107,8 @@ class Wildfire:
         
         def update_q_values():
             # Si existe el json con los qvalues lo carga
-            if os.path.isfile("q_values.json"):
-                with open("q_values.json") as json_file:
+            if os.path.isfile("q_values_MP.json"):
+                with open("q_values_MP.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
             else:
                 for status in STATUS:
@@ -185,28 +199,28 @@ class Wildfire:
             actual_status = await get_status()    
             global is_flying
 
-            if(actual_point == "PC"):
-                if is_flying:      #Se optimiza para que cargue más rapido cuando esté en el suelo
-                    print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
-                    await drone.action.land()
+            if (actual_status != "M" and actual_status != "F"):
+                if(actual_point == "PC"):
+                    if is_flying:      #Se optimiza para que cargue más rapido cuando esté en el suelo
+                        print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                        await drone.action.land()
 
-                    i=0
-                    async for in_air_local in drone.telemetry.in_air():
-                        if(i%20==0):
-                            print("Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
-                        i = i+1
-                        if not in_air_local:
-                            is_flying=False
-                            break
-                print("Charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
+                        i=0
+                        async for in_air_local in drone.telemetry.in_air():
+                            if(i%20==0):
+                                print("Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
+                            i = i+1
+                            if not in_air_local:
+                                is_flying=False
+                                break
+                    print("Charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
 
-            else:
-                print("Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
-                await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude_origin + 20)
-                await asyncio.sleep(10)
+                else:
+                    print("Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                    await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude_origin + 40)
+                    await asyncio.sleep(10)
 
-            #Wildfire.record[idDrone].append(actual_point)     solo se añade cuando hace go_to
-            Wildfire.last_action[idDrone] = "act"
+                Wildfire.last_action[idDrone] = "act"
             
         async def get_battery_status(drone):
             battery= await Wildfire.get_battery(drone)
@@ -275,9 +289,9 @@ class Wildfire:
 
         status = await get_status()
 
-        while(status != "M"):
+        while(status != "M" and status != "F"):
             
-            status = await get_status()
+            #status = await get_status()
 
             action_index=get_next_action(status, EPSILON)
 
@@ -294,9 +308,9 @@ class Wildfire:
             
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
             Wildfire.q_values[old_status][action_index] = new_q_value #actualización
-            with open("q_values.json", 'w') as outfile:
+            with open("q_values_MP.json", 'w') as outfile:
                 json.dump(Wildfire.q_values, outfile, indent=1) #actualización en json
-
+            
         await reset_episode(drone, episode)
 
     
@@ -318,7 +332,7 @@ class Wildfire:
             Wildfire.latitude_origin = terrain_info.latitude_deg
             Wildfire.longitude_origin = terrain_info.longitude_deg
             Wildfire.absolute_altitude_origin = terrain_info.absolute_altitude_m
-            Wildfire.flying_alt = Wildfire.absolute_altitude_origin + 40
+            Wildfire.flying_alt = Wildfire.absolute_altitude_origin + 60
             break
 
         Wildfire.update_constants()

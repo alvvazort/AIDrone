@@ -12,7 +12,6 @@ import os
 import json
 
 PORT = 14540
-NUMDRONES = 1
 NUMPOINTS = 2
 STATUS = ['F','M'] 
 EPSILON = 0.9
@@ -34,17 +33,6 @@ class Wildfire:
     actions_functions = []
     rewards = {}
     last_action = []
-
-    async def land_all(status_text_task):
-        for num in range(NUMDRONES):
-            print("Drone "+str(num))
-            drone = System()
-            portDrone= num+PORT
-            await drone.connect(system_address="udp://:"+str(portDrone))
-            print("-- Landing")
-            await drone.action.land()
-
-            status_text_task.cancel()
             
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
@@ -199,7 +187,7 @@ class Wildfire:
             actual_status = await get_status()    
             global is_flying
 
-            if (actual_status != "M" and actual_status != "F"):
+            if not (actual_status == "M" or actual_status == "F"):
                 if(actual_point == "PC"):
                     if is_flying:      #Se optimiza para que cargue más rapido cuando esté en el suelo
                         print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
@@ -289,7 +277,7 @@ class Wildfire:
 
         status = await get_status()
 
-        while(status != "M" and status != "F"):
+        while not (status == "M" or status == "F"):
             
             #status = await get_status()
 
@@ -304,6 +292,7 @@ class Wildfire:
             reward = Wildfire.get_updated_rewards(idDrone, status)
 
             old_q_value = Wildfire.q_values[old_status][action_index]
+
             temporal_difference = reward + (DISCOUNT_FACTOR * np.max(Wildfire.q_values[status])) - old_q_value
             
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
@@ -357,15 +346,6 @@ async def print_status_text(drone):
             print(f"Status: {status_text.type}: {status_text.text}")
     except asyncio.CancelledError:
         return
-
-async def get_drones():
-    list_drones = []
-    for num in range(NUMDRONES):
-        drone= System()
-        portDrone= num+PORT
-        await drone.connect(system_address="udp://:"+str(portDrone))
-        list_drones.append(drone)
-    return list_drones
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

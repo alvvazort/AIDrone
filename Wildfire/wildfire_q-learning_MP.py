@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import asyncio
+import math
 import random
 from mavsdk import System
 from mavsdk.geofence import Point
@@ -12,7 +13,7 @@ import os
 import json
 
 PORT = 14540
-NUMPOINTS = 2
+NUMPOINTS = 4
 STATUS = ['F','M'] 
 EPSILON = 0.9
 DISCOUNT_FACTOR = 0.9
@@ -33,6 +34,7 @@ class Wildfire:
     actions_functions = []
     rewards = {}
     last_action = []
+    dicc_raster = {}
             
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
@@ -65,27 +67,27 @@ class Wildfire:
     def update_constants():
         def update_points():
             
-            if os.path.isfile("points_MP.json"):
-                with open("points_MP.json") as json_file:
-                    coordenadas = json.load(json_file)
-                    for point in coordenadas:
-                        Wildfire.POINTS[point] = Point(coordenadas[point][0],coordenadas[point][1])
-                    
-            else:
-                PC = Point(Wildfire.latitude_origin, Wildfire.longitude_origin)
-                Wildfire.POINTS["PC"] = PC
-                coordenadas = {}
-                coordenadas["PC"] = [Wildfire.latitude_origin, Wildfire.longitude_origin]
+            PC = Point(Wildfire.latitude_origin, Wildfire.longitude_origin)
+            Wildfire.POINTS["PC"] = PC
+            coordenadas = {}
+            coordenadas["PC"] = [Wildfire.latitude_origin, Wildfire.longitude_origin]
+            
+            points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
+            
+            dimension = math.ceil(math.sqrt(NUMPOINTS))
+            
+            for fila in range(dimension):
+                for columna in range(dimension):
+                    Wildfire.dicc_raster[points[columna+fila*dimension]]=(fila,columna)
                 
-                points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
-                for num_point in range(NUMPOINTS):
-                    latitude_point =  Wildfire.latitude_origin - (num_point*0.2+1) * random.random() * 0.001        
-                    longitude_point = Wildfire.longitude_origin + (num_point*0.2+1) *  random.randint(-1,1) * random.random() * 0.001       
-                    Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
-                    coordenadas[points[num_point]] = [latitude_point, longitude_point]
+            for num_point in range(NUMPOINTS):
+                coordenada_raster_lat = Wildfire.dicc_raster[points[num_point]][0] 
+                latitude_point =  (Wildfire.latitude_origin - 0.0001) - (coordenada_raster_lat * 0.0005)     
                 
-                with open("points_MP.json", 'w') as outfile:
-                    json.dump(coordenadas, outfile, indent=1) #actualización en json
+                coordenada_raster_lon = Wildfire.dicc_raster[points[num_point]][1] 
+                longitude_point =  (Wildfire.longitude_origin - 0.001) + (coordenada_raster_lon * 0.0005)           
+                Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
+                coordenadas[points[num_point]] = [latitude_point, longitude_point]
                     
         def update_status():
             for point in list(Wildfire.POINTS.keys()):
@@ -95,8 +97,8 @@ class Wildfire:
         
         def update_q_values():
             # Si existe el json con los qvalues lo carga
-            if os.path.isfile("q_values_MP.json"):
-                with open("q_values_MP.json") as json_file:
+            if os.path.isfile("q_values_"+str(NUMPOINTS)+"P.json"):
+                with open("q_values_"+str(NUMPOINTS)+"P.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
             else:
                 for status in STATUS:
@@ -128,7 +130,6 @@ class Wildfire:
                 Wildfire.points_time[point]= datetime.datetime.now().strftime('%H:%M:%S')
 
     def get_updated_rewards(idDrone, status):
-
         if status == "M":
             return -5000
         elif status == "F":
@@ -290,14 +291,14 @@ class Wildfire:
 
             #receive the reward for moving to the new state, and calculate the temporal difference
             reward = Wildfire.get_updated_rewards(idDrone, status)
-
+            print("Obteniendo recompensa de "+ status+ " : " + str(reward))
             old_q_value = Wildfire.q_values[old_status][action_index]
 
             temporal_difference = reward + (DISCOUNT_FACTOR * np.max(Wildfire.q_values[status])) - old_q_value
             
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
             Wildfire.q_values[old_status][action_index] = new_q_value #actualización
-            with open("q_values_MP.json", 'w') as outfile:
+            with open("q_values_"+str(NUMPOINTS)+"P.json", 'w') as outfile:
                 json.dump(Wildfire.q_values, outfile, indent=1) #actualización en json
             
         await reset_episode(drone, episode)

@@ -13,7 +13,7 @@ import os
 import json
 
 PORT = 14540
-NUMPOINTS = 4
+NUMPOINTS = 5
 STATUS = ['F','M'] 
 EPSILON = 0.9
 DISCOUNT_FACTOR = 0.9
@@ -35,7 +35,7 @@ class Wildfire:
     rewards = {}
     last_action = []
     dicc_raster = {}
-            
+
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
             print(f"{battery.remaining_percent}")
@@ -74,18 +74,24 @@ class Wildfire:
             
             points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
             
-            dimension = math.ceil(math.sqrt(NUMPOINTS))
+            dimension = math.ceil(math.sqrt(NUMPOINTS*3))
             
+            index_points=0
             for fila in range(dimension):
                 for columna in range(dimension):
-                    Wildfire.dicc_raster[points[columna+fila*dimension]]=(fila,columna)
-                
+                    fire = False
+                    if(((columna+fila*dimension)%3==0 and fila%2==0) or ((columna+fila*dimension)%3==2 and fila%2!=0)) and index_points<NUMPOINTS:      #Esto permite que los puntos aparezcan mas esparcidos en el mapa raster 
+                        Wildfire.dicc_raster[points[index_points]]=(fila,columna,fire)
+                        index_points+=1
+                    else:
+                        Wildfire.dicc_raster["Hueco"+str(columna+fila*dimension)]=(fila,columna,fire)
+            
             for num_point in range(NUMPOINTS):
                 coordenada_raster_lat = Wildfire.dicc_raster[points[num_point]][0] 
-                latitude_point =  (Wildfire.latitude_origin - 0.0001) - (coordenada_raster_lat * 0.0005)     
+                latitude_point =  (Wildfire.latitude_origin - 0.0001) - (coordenada_raster_lat * 0.0005)/3     
                 
                 coordenada_raster_lon = Wildfire.dicc_raster[points[num_point]][1] 
-                longitude_point =  (Wildfire.longitude_origin - 0.001) + (coordenada_raster_lon * 0.0005)           
+                longitude_point =  (Wildfire.longitude_origin - 0.001) + (coordenada_raster_lon * 0.0005)/3           
                 Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
                 coordenadas[points[num_point]] = [latitude_point, longitude_point]
                     
@@ -206,6 +212,7 @@ class Wildfire:
 
                 else:
                     print("Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                    
                     await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude_origin + 40)
                     await asyncio.sleep(10)
 
@@ -291,7 +298,8 @@ class Wildfire:
 
             #receive the reward for moving to the new state, and calculate the temporal difference
             reward = Wildfire.get_updated_rewards(idDrone, status)
-            print("Obteniendo recompensa de "+ status+ " : " + str(reward))
+            print("Reward: " + str(round(reward,2)))
+
             old_q_value = Wildfire.q_values[old_status][action_index]
 
             temporal_difference = reward + (DISCOUNT_FACTOR * np.max(Wildfire.q_values[status])) - old_q_value

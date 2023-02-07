@@ -1,70 +1,82 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import animation
-from matplotlib import colors
+import math
+import asyncio
 
-# Create a forest fire animation based on a simple cellular automaton model.
-# The maths behind this code is described in the scipython blog article
-# at https://scipython.com/blog/the-forest-fire-model/
-# Christian Hill, January 2016.
-# Updated January 2020.
 
-# Displacements from a cell to its eight nearest neighbours
-neighbourhood = ((-1,-1), (-1,0), (0,-1), (0, 1), (1,0))
-EMPTY, TREE, FIRE = 0, 1, 2
-# Colours for visualization: brown for EMPTY, dark green for TREE and orange
-# for FIRE. Note that for the colormap to work, this list and the bounds list
-# must be one larger than the number of different values in the array.
+wildfire = False
+wildfire_probability = 0.1
+wildfire_propagation = 0.1
+wildfire_extinguished = 0.1
 
-def iterate(dicc_raster):
-    """Iterate the forest according to the forest-fire rules."""
+NUMPOINTS = 5
 
-    # The boundary of the forest is always empty, so only consider cells
-    # indexed from 1 to nx-2, 1 to ny-2
+def start_dicc_raster():
+    dicc_raster={}
+
+    points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
     
-    for ix in range(1,nx-1):
-        for iy in range(1,ny-1):
-            if X[iy,ix] == EMPTY and np.random.random() <= p:
-                X1[iy,ix] = TREE
-            if X[iy,ix] == TREE:
-                X1[iy,ix] = TREE
-                for dx,dy in neighbourhood:
-                    # The diagonally-adjacent trees are further away, so
-                    # only catch fire with a reduced probability:
-                    if abs(dx) == abs(dy) and np.random.random() < 0.573:
-                        continue
-                    if X[iy+dy,ix+dx] == FIRE:
-                        X1[iy,ix] = FIRE
-                        break
-                else:
-                    if np.random.random() <= f:
-                        X1[iy,ix] = FIRE
-    return X1
+    dimension = math.ceil(math.sqrt(NUMPOINTS*3))
+    index_points=0
+    for fila in range(dimension):
+        for columna in range(dimension):
+            fire = False
+            if(((columna+fila*dimension)%3==0 and fila%2==0) or ((columna+fila*dimension)%3==2 and fila%2!=0)) and index_points<NUMPOINTS:      #Esto permite que los puntos aparezcan mas esparcidos en el mapa raster 
+                dicc_raster[points[index_points]]=(fila,columna,fire)
+                index_points+=1
+            else:
+                dicc_raster["Hueco"+str(columna+fila*dimension)]=(fila,columna,fire)
+            
+    return dicc_raster
 
-# The initial fraction of the forest occupied by trees.
-forest_fraction = 0.2
-# Probability of new tree growth per empty cell, and of lightning strike.
-p, f = 0.05, 0.0001
-# Forest size (number of cells in x and y directions).
-nx, ny = 100, 100
-# Initialize the forest grid.
-X  = np.zeros((ny, nx))
-X[1:ny-1, 1:nx-1] = np.random.randint(0, 2, size=(ny-2, nx-2))
-X[1:ny-1, 1:nx-1] = np.random.random(size=(ny-2, nx-2)) < forest_fraction
+def start_fire(dicc_raster):
+    fire_prob = np.random.random()
+    if(fire_prob < wildfire_probability):
+        key = list(dicc_raster)[np.random.randint(0,len(dicc_raster))]
+        origin_fire = dicc_raster[key]
+        origin_fire = (origin_fire[0], origin_fire[1], True)
+        global wildfire
+        wildfire = True
+        dicc_raster[key]= origin_fire
+        print("Wildfire started at " + str(key) + " (" + str(dicc_raster[key][0]) + ", " + str(dicc_raster[key][1]) + ")")
 
-fig = plt.figure(figsize=(25/3, 6.25))
-ax = fig.add_subplot(111)
-ax.set_axis_off()
-im = ax.imshow(X, cmap=cmap, norm=norm)#, interpolation='nearest')
+def get_adjacent(dicc_raster, fire_point):
+    fire_points = [(k,v) for k, v in dicc_raster.items() if abs(v[0] - fire_point[0]) + abs(v[1] - fire_point[1]) == 1]   #Solo adyacentes
+    return fire_points 
 
-# The animation function: called to produce a frame for each generation.
-def animate(i):
-    im.set_data(animate.X)
-    animate.X = iterate(animate.X)
-# Bind our grid to the identifier X in the animate function's namespace.
-animate.X = X
+def fire_propagation(dicc_raster):
 
-# Interval between frames (ms).
-interval = 100
-anim = animation.FuncAnimation(fig, animate, interval=interval, frames=200)
-plt.show()
+    fire_points = [(k,v) for k, v in dicc_raster.items() if v[2] == True]
+
+    for fire_point in fire_points:
+        points_adjacents = get_adjacent(dicc_raster, fire_point[1])
+        for adjacent in points_adjacents:
+            if(np.random.random()<wildfire_propagation and adjacent[1][2] == False):        #Solo se propaga a los no incendiados
+                k = adjacent[0]
+                v = adjacent[1]
+                print("Wildfire was propagated to point "+k+" ("+str(v[0])+", "+str(v[1])+")")
+                
+                val = (v[0],v[1], True)
+                dicc_raster[k]=val
+                
+        if(np.random.random() < wildfire_extinguished):
+            dicc_raster[fire_point[0]] = (dicc_raster[fire_point[0]][0], dicc_raster[fire_point[0]][1], False)  
+            print("Wildfire was extinguished at point " + str(fire_point[0]))  
+    return dicc_raster
+
+async def propagation():
+    global dicc_raster
+    while(True):
+        fire_points = [(k,v) for k, v in dicc_raster.items() if v[2] == True]
+        if (fire_points == []):
+            start_fire(dicc_raster)
+        dicc_raster=fire_propagation(dicc_raster)
+        await asyncio.sleep(10)
+
+dicc_raster = start_dicc_raster()
+
+while(wildfire == False):
+    start_fire(dicc_raster)
+    
+loop = asyncio.get_event_loop()
+loop.run_until_complete(propagation())
+

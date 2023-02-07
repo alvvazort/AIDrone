@@ -11,6 +11,7 @@ from datetime import timedelta
 import numpy as np
 import os
 import json
+import fire
 
 PORT = 14540
 NUMPOINTS = 5
@@ -35,6 +36,7 @@ class Wildfire:
     rewards = {}
     last_action = []
     dicc_raster = {}
+    count_actions= 0
 
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
@@ -137,6 +139,29 @@ class Wildfire:
             for point in list(Wildfire.POINTS.keys()):
                 Wildfire.points_time[point]= datetime.datetime.now().strftime('%H:%M:%S')
 
+    def pretty_print_dicc_raster():
+        dimension = math.ceil(math.sqrt(NUMPOINTS*3))
+        matrix_razer = np.empty((dimension, dimension), dtype=str)
+        try:
+            drone_point = Wildfire.record[0][-1]        #TODO CAMBIAR 0 POR IDDRONE FUTURO
+        except:
+            pass
+        for k,v in Wildfire.dicc_raster.items():
+            state=""
+            if "Hueco" in k:
+                state="🌳"
+            else:
+                state=k
+            if v[2]:
+                state="🔥"
+            try: 
+                if drone_point == k:
+                    state = "🚁"
+            except:
+                pass
+            matrix_razer[v[0]][v[1]]=state
+        print(matrix_razer)
+
     def get_updated_rewards(idDrone, status):
         if status == "M":
             return -5000
@@ -149,7 +174,6 @@ class Wildfire:
             fecha_now = datetime.datetime.strptime(now, '%H:%M:%S')
             fecha_monitorized_time = datetime.datetime.strptime(monitorized_time, '%H:%M:%S')
             
-            
             diff = (fecha_now - fecha_monitorized_time)/ timedelta(minutes=1) 
 
             if Wildfire.last_action[idDrone] == "go_to":
@@ -157,11 +181,16 @@ class Wildfire:
                     return -20
                 else:
                     reward = Wildfire.rewards[status]
+                Wildfire.count_actions = 0
             else:
+                Wildfire.count_actions+=1
                 if(status == "PC10"):
                     reward= -50
-                else:
-                    reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status]
+                else: 
+                    if Wildfire.dicc_raster[point][2]:
+                        fire_reward = 20 / (1 + Wildfire.count_actions/5)
+                    
+                    reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status] + fire_reward
                 Wildfire.points_time[point] = now
             return reward
 
@@ -310,12 +339,24 @@ class Wildfire:
             Wildfire.q_values[old_status][action_index] = new_q_value #actualización
             with open("q_values_"+str(NUMPOINTS)+"P.json", 'w') as outfile:
                 json.dump(Wildfire.q_values, outfile, indent=1) #actualización en json
-            
+        
+        print("Map reset, wildfire was extinguished")
+        for k,v in Wildfire.dicc_raster.items():
+            Wildfire.dicc_raster[k] = (Wildfire.dicc_raster[k][0], Wildfire.dicc_raster[k][1], False)
         await reset_episode(drone, episode)
+            
+    async def run_fire():
+        await asyncio.sleep(10)
+        while(True):    
+            fire_points = [(k,v) for k, v in Wildfire.dicc_raster.items() if v[2] == True]
+            if (fire_points == []):          # Si no hay fuego, lo inicia 
+                Wildfire.dicc_raster= fire.start_fire(Wildfire.dicc_raster)
+            Wildfire.dicc_raster=fire.fire_propagation(Wildfire.dicc_raster)
+            Wildfire.pretty_print_dicc_raster()
+            await asyncio.sleep(60)
 
-    
     async def run():
-        print("Drone 0")
+        print("Buenos días Octavio, soy el Drone 0")
         drone = System()
         await drone.connect(system_address="udp://:"+str(PORT))
 
@@ -336,6 +377,8 @@ class Wildfire:
             break
 
         Wildfire.update_constants()
+        print("Los " + str(NUMPOINTS) + " puntos del problema se han rasterizado de la siguiente manera: ")
+        Wildfire.pretty_print_dicc_raster()
         Wildfire.record.append([])
         Wildfire.last_action.append([])
         for episode in range(20):
@@ -346,10 +389,13 @@ class Wildfire:
             
             print("-- Taking off")
             await drone.action.takeoff()
+            #loop = asyncio.get_event_loop()
+            #asyncio.ensure_future(Wildfire.run_fire())
+            #asyncio.ensure_future(Wildfire.AIDrone(0,drone,episode))
             await Wildfire.AIDrone(0,drone,episode)    # 0 es idDrone
+            #loop.run_forever()
 
         print("Training completed")
-
 
 async def print_status_text(drone):
     try:
@@ -359,6 +405,10 @@ async def print_status_text(drone):
         return
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
+    main_loop = asyncio.get_event_loop()
     #loop.run_until_complete(Wildfire.calculate_coordinates())
-    loop.run_until_complete(Wildfire.run())
+    #main_loop.run_until_complete(Wildfire.run())        
+    asyncio.ensure_future(Wildfire.run())
+    asyncio.ensure_future(Wildfire.run_fire())
+    main_loop.run_forever()
+    

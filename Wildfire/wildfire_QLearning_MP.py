@@ -187,6 +187,7 @@ class Wildfire:
                 if(status == "PC10"):
                     reward= -50
                 else: 
+                    fire_reward = 0
                     if Wildfire.dicc_raster[point][2]:
                         fire_reward = 20 / (1 + Wildfire.count_actions/5)
                     

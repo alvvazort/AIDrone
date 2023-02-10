@@ -378,7 +378,7 @@ class Wildfire:
             break
 
         Wildfire.update_constants()
-        print("Los " + str(NUMPOINTS) + " puntos del problema se han rasterizado de la siguiente manera: ")
+        print("The " + str(NUMPOINTS) + " points of the problem have been rasterized as: ")
         Wildfire.pretty_print_dicc_raster()
         Wildfire.record.append([])
         Wildfire.last_action.append([])

@@ -357,7 +357,7 @@ class Wildfire:
             await asyncio.sleep(60)
 
     async def run():
-        print("Buenos días Octavio, soy el Drone 0")
+        print("Drone 0 ready to start routine")
         drone = System()
         await drone.connect(system_address="udp://:"+str(PORT))
 

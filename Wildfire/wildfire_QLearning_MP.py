@@ -3,6 +3,7 @@
 import asyncio
 import math
 import random
+import shutil
 from mavsdk import System
 from mavsdk.geofence import Point
 from mavsdk.action import OrbitYawBehavior
@@ -12,6 +13,7 @@ import numpy as np
 import os
 import json
 import fire
+import logging
 
 PORT = 14540
 NUMPOINTS = 5
@@ -19,6 +21,26 @@ STATUS = ['F','M']
 EPSILON = 0.9
 DISCOUNT_FACTOR = 0.9
 LEARNING_RATE = 0.9
+
+
+def setup_logger(name, log_file, level=logging.INFO):
+    """To setup as many loggers as you want"""
+    if os.path.isfile(log_file):
+        created_at=open(log_file).readline().rstrip().split(",")[0].replace(" ","_")
+        shutil.copy(log_file, "LOGS/"+name+"_"+str(NUMPOINTS)+"P_"+created_at+".log")
+        os.remove(log_file)
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+    handler = logging.FileHandler(log_file)        
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+    logger.info("Log de "+name)
+
+    return logger
+
 
 class Wildfire:
     
@@ -37,6 +59,11 @@ class Wildfire:
     last_action = []
     dicc_raster = {}
     count_actions= 0
+    
+    log_point_matrix = setup_logger('point_matrix', "LOGS/points_matrix_"+str(NUMPOINTS)+"P.log")
+    log_actions_states = setup_logger('actions_states', "LOGS/actions_states_"+str(NUMPOINTS)+"P.log")
+    log_rewards = setup_logger('rewards', "LOGS/rewards_"+str(NUMPOINTS)+"P.log")
+
 
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
@@ -107,8 +134,10 @@ class Wildfire:
         
         def update_q_values():
             # Si existe el json con los qvalues lo carga
-            if os.path.isfile("q_values_"+str(NUMPOINTS)+"P.json"):
-                with open("q_values_"+str(NUMPOINTS)+"P.json") as json_file:
+            if(not os.path.exists("JSON")):
+                os.mkdir("JSON")
+            if os.path.isfile("JSON/q_values_"+str(NUMPOINTS)+"P.json"):
+                with open("JSON/q_values_"+str(NUMPOINTS)+"P.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
             else:
                 for status in STATUS:
@@ -160,6 +189,7 @@ class Wildfire:
             except:
                 pass
             matrix_razer[v[0]][v[1]]=state
+        Wildfire.log_point_matrix.info(matrix_razer)
         print(matrix_razer)
 
     def get_updated_rewards(idDrone, status):
@@ -338,7 +368,8 @@ class Wildfire:
             
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
             Wildfire.q_values[old_status][action_index] = new_q_value #actualización
-            with open("q_values_"+str(NUMPOINTS)+"P.json", 'w') as outfile:
+
+            with open("JSON/q_values_"+str(NUMPOINTS)+"P.json", 'w') as outfile:
                 json.dump(Wildfire.q_values, outfile, indent=1) #actualización en json
         
         print("Map reset, wildfire was extinguished")
@@ -357,6 +388,9 @@ class Wildfire:
             await asyncio.sleep(60)
 
     async def run():
+        if(not os.path.exists("LOGS")):
+            os.mkdir("LOGS")
+
         print("Drone 0 ready to start routine")
         drone = System()
         await drone.connect(system_address="udp://:"+str(PORT))

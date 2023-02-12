@@ -26,6 +26,8 @@ class Wildfire:
 
     def setup_logger(name, log_file, level=logging.INFO):
         """To setup as many loggers as you want"""
+        if(not os.path.exists("LOGS")):
+            os.mkdir("LOGS")
         if os.path.isfile(log_file):
             created_at=open(log_file).readline().rstrip().split(",")[0].replace(" ","_")
             shutil.copy(log_file, "LOGS/"+name+"_"+str(NUMPOINTS)+"P_"+created_at+".log")
@@ -133,8 +135,6 @@ class Wildfire:
         
         def update_q_values():
             # Si existe el json con los qvalues lo carga
-            if(not os.path.exists("JSON")):
-                os.mkdir("JSON")
             if os.path.isfile("JSON/q_values_"+str(NUMPOINTS)+"P.json"):
                 with open("JSON/q_values_"+str(NUMPOINTS)+"P.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
@@ -177,14 +177,14 @@ class Wildfire:
         for k,v in Wildfire.dicc_raster.items():
             state=""
             if "Hueco" in k:
-                state="🌳"
+                state+="🌳"
             else:
-                state=k
+                state+=k
             if v[2]:
-                state="🔥"
+                state+="🔥"
             try: 
                 if drone_point == k:
-                    state = "🚁"
+                    state += "🚁"
             except:
                 pass
             matrix_razer[v[0]][v[1]]=state
@@ -403,8 +403,6 @@ class Wildfire:
             await asyncio.sleep(60)
 
     async def run():
-        if(not os.path.exists("LOGS")):
-            os.mkdir("LOGS")
         Wildfire.log_rewards.info("Action Point Reward")
 
         print("Drone 0 ready to start routine")

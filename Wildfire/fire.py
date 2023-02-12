@@ -6,7 +6,7 @@ from datetime import timedelta
 
 
 wildfire = False
-wildfire_probability = 1
+wildfire_probability = 0.1
 wildfire_propagation = 0.1
 wildfire_extinguished = 0.1
 dicc_fire_time = {}

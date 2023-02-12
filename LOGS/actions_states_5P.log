@@ -1,1 +1,8 @@
-2023-02-11 14:26:44,800 INFO Log de actions_states
+2023-02-12 13:01:58,459 INFO Creation of log actions_states
+2023-02-12 13:02:09,453 INFO Going to PC with 100.0 percentage at 13:02:07 (PC10)
+2023-02-12 13:02:15,467 INFO Going to E with 100.0 percentage at 13:02:13 (PC10)
+2023-02-12 13:02:37,616 INFO Monitoring point E with 100.0 percentage at 13:02:37 (E10)
+2023-02-12 13:02:52,063 INFO Going to PC with 100.0 percentage at 13:02:50 (E10)
+2023-02-12 13:03:14,114 INFO Acting on point PC with 93.0 percentage at 13:03:14 (PC9)
+2023-02-12 13:03:15,157 INFO Trying to land, still in air. Still 59.38 from ground.
+2023-02-12 13:03:35,218 INFO Trying to land, still in air. Still 29.82 from ground.

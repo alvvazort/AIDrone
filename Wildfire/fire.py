@@ -1,13 +1,19 @@
 import numpy as np
 import math
 import asyncio
+import datetime as datetime
+from datetime import timedelta
 
 
 wildfire = False
-wildfire_probability = 0.1
+wildfire_probability = 1
 wildfire_propagation = 0.1
 wildfire_extinguished = 0.1
+dicc_fire_time = {}
 
+def start_dicc_fire_time(dicc_raster):
+    for k in dicc_raster.keys():
+        dicc_fire_time[k] = datetime.datetime.now()
 
 def start_fire(dicc_raster):
     fire_prob = np.random.random()
@@ -18,6 +24,7 @@ def start_fire(dicc_raster):
         global wildfire
         wildfire = True
         dicc_raster[key]= origin_fire
+        dicc_fire_time[key] = datetime.datetime.now()
         #print("Wildfire started at " + str(key) + " (" + str(dicc_raster[key][0]) + ", " + str(dicc_raster[key][1]) + ")")
     return dicc_raster
 
@@ -39,8 +46,10 @@ def fire_propagation(dicc_raster):
                 
                 val = (v[0],v[1], True)
                 dicc_raster[k]=val
-                
-        if(np.random.random() < wildfire_extinguished):
+                dicc_fire_time[k] = datetime.datetime.now()
+        
+        wildfire_extinguished_time = wildfire_extinguished + ((datetime.datetime.now() - dicc_fire_time[fire_point[0]])/timedelta(minutes=1))*0.005
+        if(np.random.random() < wildfire_extinguished_time):
             dicc_raster[fire_point[0]] = (dicc_raster[fire_point[0]][0], dicc_raster[fire_point[0]][1], False)  
             #print("Wildfire was extinguished at point " + str(fire_point[0]))  
     return dicc_raster

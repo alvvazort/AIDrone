@@ -169,7 +169,7 @@ class Wildfire:
 
     def pretty_print_dicc_raster():
         dimension = math.ceil(math.sqrt(NUMPOINTS*3))
-        matrix_razer = np.empty((dimension, dimension), dtype=str)
+        matrix_razer = np.empty((dimension, dimension), dtype="<U10")
         try:
             drone_point = Wildfire.record[0][-1]        #TODO CAMBIAR 0 POR IDDRONE FUTURO
         except:

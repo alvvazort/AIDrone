@@ -1,11 +1,11 @@
-2023-02-12 13:21:12,006 INFO Creation of log actions_states
-2023-02-12 13:21:22,847 INFO Acting on point PC with 91.0 percentage at 13:21:22 (PC9)
-2023-02-12 13:21:23,878 INFO Trying to land, still in air. Still 1.78 from ground.
-2023-02-12 13:21:32,971 INFO Charging battery at PC with 87.0 percentage at 13:21:30 (PC10)
-2023-02-12 13:21:38,994 INFO Going to E with 100.0 percentage at 13:21:36 (PC10)
-2023-02-12 13:22:11,310 INFO Monitoring point E with 100.0 percentage at 13:22:11 (E10)
-2023-02-12 13:22:25,364 INFO Monitoring point E with 100.0 percentage at 13:22:25 (E10)
-2023-02-12 13:22:39,400 INFO Monitoring point E with 95.0 percentage at 13:22:39 (E9)
-2023-02-12 13:22:55,676 INFO Monitoring point E with 90.0 percentage at 13:22:55 (E9)
-2023-02-12 13:23:09,806 INFO Monitoring point E with 85.0 percentage at 13:23:09 (E8)
-2023-02-12 13:23:25,956 INFO Monitoring point E with 80.0 percentage at 13:23:25 (E8)
+2023-02-12 14:14:24,441 INFO Creation of log actions_states
+2023-02-12 14:15:51,130 INFO Going to D with 100.0 percentage at 14:15:49 (PC10)
+2023-02-12 14:16:15,187 INFO Monitoring point D with 100.0 percentage at 14:16:15 (D10)
+2023-02-12 14:16:31,227 INFO Monitoring point D with 100.0 percentage at 14:16:31 (D10)
+2023-02-12 14:16:47,265 INFO Monitoring point D with 96.0 percentage at 14:16:47 (D9)
+2023-02-12 14:17:01,415 INFO Monitoring point D with 91.0 percentage at 14:17:01 (D9)
+2023-02-12 14:17:15,461 INFO Going to A with 87.0 percentage at 14:17:13 (D9)
+2023-02-12 14:17:27,488 INFO Monitoring point A with 83.0 percentage at 14:17:27 (A8)
+2023-02-12 14:17:43,528 INFO Monitoring point A with 77.0 percentage at 14:17:43 (A8)
+2023-02-12 14:17:59,568 INFO Going to A with 72.0 percentage at 14:17:57 (A7)
+2023-02-12 14:18:05,585 INFO Monitoring point A with 70.0 percentage at 14:18:05 (A7)

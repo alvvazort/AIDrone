@@ -177,14 +177,14 @@ class Wildfire:
         for k,v in Wildfire.dicc_raster.items():
             state=""
             if "Hueco" in k:
-                state+="🌳"
+                state="🌳"
             else:
-                state+=k
+                state=k
             if v[2]:
-                state+="🔥"
+                state="🔥"
             try: 
                 if drone_point == k:
-                    state += "🚁"
+                    state = "🚁"
             except:
                 pass
             matrix_razer[v[0]][v[1]]=state

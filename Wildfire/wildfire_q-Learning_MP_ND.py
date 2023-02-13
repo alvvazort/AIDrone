@@ -14,8 +14,6 @@ import os
 import json
 import fire
 import logging
-from colorama import Fore, Back, Style
-
 
 PORT = 14540
 NUMPOINTS = 5
@@ -24,6 +22,7 @@ STATUS = ['F','M']
 EPSILON = 0.9
 DISCOUNT_FACTOR = 0.9
 LEARNING_RATE = 0.9
+NUM_EPOCHS = 20
 
 class Wildfire:
 
@@ -63,6 +62,7 @@ class Wildfire:
     dicc_raster = {}
     count_actions= 0
     total_reward = 0.
+    drones=[]
     
     log_point_matrix = setup_logger('point_matrix', "LOGS/points_matrix_"+str(NUMPOINTS)+"P_"+str(NUMDRONES)+"D.log")
     log_actions_states = setup_logger('actions_states', "LOGS/actions_states_"+str(NUMPOINTS)+"P_"+str(NUMDRONES)+"D.log")
@@ -236,7 +236,7 @@ class Wildfire:
 
     async def AIDrone(episode):
 
-        async def go_to(idDrone, point):        # TODO pasarle el atributo idDrone y dron a act y go_to
+        async def go_to(idDrone, point):        # TODO pasarle el atributo idDrone y drone a act y go_to
 
             global is_flying
             if not is_flying:
@@ -305,22 +305,24 @@ class Wildfire:
             battery_status = [k for k, v in battery_levels.items() if v >= battery][0]
             return battery_status
 
-        async def get_status(drone, idDrone):       #TODO pasarle los atributos a las llamadas
-            battery_status = await get_battery_status(drone)
-            point = Wildfire.record[idDrone][-1]
-            global is_flying
+        async def get_status(drone):  # Formato de estado: Punto Batería (x cada drone)
+            status = ""
+            for idDrone, drone in enumerate(Wildfire.drones):
+                battery_status = await get_battery_status(drone)
+                point = Wildfire.record[idDrone][-1]
+                global is_flying
 
-            if(battery_status==1):
-                if(point=="M"):
-                    return "F"
-                if is_flying:
-                    Wildfire.record[idDrone].append("M")
-                    text_log = "Mayday! Mayday! Drone without battery " + "(M)"
-                    Wildfire.log_actions_states.info(text_log)
-                    print(text_log)
-                    return "M"
-            
-            status = point+str(battery_status)
+                if(battery_status==1):
+                    if(point=="M"):
+                        return "F"
+                    if is_flying:
+                        Wildfire.record[idDrone].append("M")
+                        text_log = "Mayday! Mayday! Drone without battery " + "(M)"
+                        Wildfire.log_actions_states.info(text_log)
+                        print(text_log)
+                        return "M"
+                
+                status += point+str(battery_status)
             return status
 
         def get_next_action(state, epsilon):
@@ -366,19 +368,21 @@ class Wildfire:
         global is_flying
         is_flying = True
 
-        for i in range(NUMDRONES):
-            status = await get_status()
+        status = await get_status()
 
         while not (status == "M" or status == "F"):
             
-            #status = await get_status()
+            action_index=get_next_action(status, EPSILON) #       
 
-            action_index=get_next_action(status, EPSILON)
+            # perform the chosen action, and transition to the next state (i.e., move to the next location)
+            old_status = status # store the old row and column indexes
 
-            #perform the chosen action, and transition to the next state (i.e., move to the next location)
-            old_status = status #store the old row and column indexes
-
-            status = await get_next_status(action_index, idDrone)
+            loop = asyncio.get_event_loop() # Paralelizamos las tareas realizadas por cada dron
+            for idDrone in range(NUMDRONES):
+                status = asyncio.ensure_future(await get_next_status(action_index, idDrone))
+            loop.run_until_complete()
+               
+            # Esperar al que tarde más y a partir de ahí seguir con la ejecución del codigo
 
             #receive the reward for moving to the new state, and calculate the temporal difference
             reward = Wildfire.get_updated_rewards(idDrone, status)
@@ -442,17 +446,15 @@ class Wildfire:
 
     async def run():
         Wildfire.log_rewards.info("Action Point Reward")
-        drones = []
+
         for idDrone in range(NUMPOINTS):            # Conexiones con todos los drones
             drone_connection = await Wildfire.connect_drone(idDrone)
-            drones.append(drone_connection)
-
-        #status_text_task = asyncio.ensure_future(print_status_text(drone))
+            Wildfire.drones.append(drone_connection)
         
-        for drone in drones:
+        for drone in Wildfire.drones:
             Wildfire.global_position(drone)
 
-        for drone in drones:
+        for drone in Wildfire.drones:
             Wildfire.terrain_info(drone)
 
         Wildfire.update_constants()         # TODO verlo
@@ -460,18 +462,15 @@ class Wildfire:
         Wildfire.pretty_print_dicc_raster()
         Wildfire.record.append([])
         Wildfire.last_action.append([])
-        for episode in range(20):
+        for episode in range(NUM_EPOCHS): # Cada episodio se termina cuando todos los drones mueren
             Wildfire.update_points_time()
-            print("-- Arming")
-            await drone.action.arm()
-            
-            print("-- Taking off")
-            await drone.action.takeoff()
-            #loop = asyncio.get_event_loop()
-            #asyncio.ensure_future(Wildfire.run_fire())
-            #asyncio.ensure_future(Wildfire.AIDrone(0,drone,episode))
-            await Wildfire.AIDrone(0,drone,episode)    # 0 es idDrone
-            #loop.run_forever()
+            for drone in Wildfire.drones:
+                print("-- Arming")
+                await drone.action.arm()
+                
+                print("-- Taking off")
+                await drone.action.takeoff()
+            await Wildfire.AIDrone(episode)    
 
         print("Training completed")
 

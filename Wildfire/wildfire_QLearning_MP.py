@@ -3,6 +3,7 @@
 import asyncio
 import math
 import random
+import shutil
 from mavsdk import System
 from mavsdk.geofence import Point
 from mavsdk.action import OrbitYawBehavior
@@ -12,6 +13,7 @@ import numpy as np
 import os
 import json
 import fire
+import logging
 
 PORT = 14540
 NUMPOINTS = 5
@@ -21,6 +23,26 @@ DISCOUNT_FACTOR = 0.9
 LEARNING_RATE = 0.9
 
 class Wildfire:
+
+    def setup_logger(name, log_file, level=logging.INFO):
+        """To setup as many loggers as you want"""
+        if(not os.path.exists("LOGS")):
+            os.mkdir("LOGS")
+        if os.path.isfile(log_file):
+            created_at=open(log_file).readline().rstrip().split(",")[0].replace(" ","_")
+            shutil.copy(log_file, "LOGS/"+name+"_"+str(NUMPOINTS)+"P_"+created_at+".log")
+            os.remove(log_file)
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+        handler = logging.FileHandler(log_file)        
+        handler.setFormatter(formatter)
+
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
+        logger.addHandler(handler)
+        logger.info("Creation of log "+name)
+
+        return logger
     
     latitude_origin = 0
     longitude_origin = 0
@@ -37,6 +59,12 @@ class Wildfire:
     last_action = []
     dicc_raster = {}
     count_actions= 0
+    total_reward = 0.
+    
+    log_point_matrix = setup_logger('point_matrix', "LOGS/points_matrix_"+str(NUMPOINTS)+"P.log")
+    log_actions_states = setup_logger('actions_states', "LOGS/actions_states_"+str(NUMPOINTS)+"P.log")
+    log_rewards = setup_logger('rewards', "LOGS/rewards_"+str(NUMPOINTS)+"P.log")
+    
 
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
@@ -107,8 +135,8 @@ class Wildfire:
         
         def update_q_values():
             # Si existe el json con los qvalues lo carga
-            if os.path.isfile("q_values_"+str(NUMPOINTS)+"P.json"):
-                with open("q_values_"+str(NUMPOINTS)+"P.json") as json_file:
+            if os.path.isfile("JSON/q_values_"+str(NUMPOINTS)+"P.json"):
+                with open("JSON/q_values_"+str(NUMPOINTS)+"P.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
             else:
                 for status in STATUS:
@@ -141,7 +169,7 @@ class Wildfire:
 
     def pretty_print_dicc_raster():
         dimension = math.ceil(math.sqrt(NUMPOINTS*3))
-        matrix_razer = np.empty((dimension, dimension), dtype=str)
+        matrix_razer = np.empty((dimension, dimension), dtype="<U10")
         try:
             drone_point = Wildfire.record[0][-1]        #TODO CAMBIAR 0 POR IDDRONE FUTURO
         except:
@@ -160,6 +188,7 @@ class Wildfire:
             except:
                 pass
             matrix_razer[v[0]][v[1]]=state
+        Wildfire.log_point_matrix.info("\n" + str(matrix_razer))
         print(matrix_razer)
 
     def get_updated_rewards(idDrone, status):
@@ -193,6 +222,7 @@ class Wildfire:
                     
                     reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status] + fire_reward
                 Wildfire.points_time[point] = now
+                Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(reward,2)))
             return reward
 
     async def AIDrone(idDrone,drone, episode):
@@ -211,8 +241,9 @@ class Wildfire:
 
             battery = round(await Wildfire.get_battery(drone)*100,2)    
             name_point = [k for k, v in Wildfire.POINTS.items() if v == point][0]
-            print("Going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
-            
+            text_log="Going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
+            print(text_log)
+            Wildfire.log_actions_states.info(text_log)
             async for position in drone.telemetry.position():
                 #Comprueba que llega al punto    
                 if abs(position.latitude_deg-point.latitude_deg)<0.00001 and abs(position.longitude_deg-point.longitude_deg)<0.00001: 
@@ -229,21 +260,29 @@ class Wildfire:
             if not (actual_status == "M" or actual_status == "F"):
                 if(actual_point == "PC"):
                     if is_flying:      #Se optimiza para que cargue más rapido cuando esté en el suelo
-                        print("Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                        text_log = "Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
+                        print(text_log)
+                        Wildfire.log_actions_states.info(text_log)
                         await drone.action.land()
 
                         i=0
                         async for in_air_local in drone.telemetry.in_air():
                             if(i%20==0):
-                                print("Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
+                                text_log = "Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground."
+                                print(text_log)
+                                Wildfire.log_actions_states.info("Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
                             i = i+1
                             if not in_air_local:
                                 is_flying=False
                                 break
-                    print("Charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")")
+                    text_log = "Charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
+                    print(text_log)
+                    Wildfire.log_actions_states.info(text_log)
 
                 else:
-                    print("Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")")
+                    text_log = "Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
+                    print(text_log)
+                    Wildfire.log_actions_states.info(text_log)
                     
                     await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude_origin + 40)
                     await asyncio.sleep(10)
@@ -331,23 +370,30 @@ class Wildfire:
             #receive the reward for moving to the new state, and calculate the temporal difference
             reward = Wildfire.get_updated_rewards(idDrone, status)
             print("Reward: " + str(round(reward,2)))
-
+            Wildfire.total_reward += reward
+                
             old_q_value = Wildfire.q_values[old_status][action_index]
 
             temporal_difference = reward + (DISCOUNT_FACTOR * np.max(Wildfire.q_values[status])) - old_q_value
             
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
             Wildfire.q_values[old_status][action_index] = new_q_value #actualización
-            with open("q_values_"+str(NUMPOINTS)+"P.json", 'w') as outfile:
+
+            with open("JSON/q_values_"+str(NUMPOINTS)+"P.json", 'w') as outfile:
                 json.dump(Wildfire.q_values, outfile, indent=1) #actualización en json
         
         print("Map reset, wildfire was extinguished")
         for k,v in Wildfire.dicc_raster.items():
             Wildfire.dicc_raster[k] = (Wildfire.dicc_raster[k][0], Wildfire.dicc_raster[k][1], False)
+        
+        print("Accumulated reward: " + str(round(Wildfire.total_reward,2)))
         await reset_episode(drone, episode)
+        Wildfire.log_rewards.info("Accumulated reward of episode " + str(episode) + ": " + str(round(Wildfire.total_reward,2)))
+        Wildfire.total_reward = 0.
             
     async def run_fire():
         await asyncio.sleep(10)
+        fire.start_dicc_fire_time(Wildfire.dicc_raster)
         while(True):    
             fire_points = [(k,v) for k, v in Wildfire.dicc_raster.items() if v[2] == True]
             if (fire_points == []):          # Si no hay fuego, lo inicia 
@@ -357,6 +403,8 @@ class Wildfire:
             await asyncio.sleep(60)
 
     async def run():
+        Wildfire.log_rewards.info("Action Point Reward")
+
         print("Drone 0 ready to start routine")
         drone = System()
         await drone.connect(system_address="udp://:"+str(PORT))

@@ -32,8 +32,10 @@ async def run():
     q_values = {}
     
     # Si existe el json con el qvalue lo carga
-    if os.path.isfile("q_values.json"):
-        with open("q_values.json") as json_file:
+    if(not os.path.exists("JSON")):
+        os.mkdir("JSON")
+    if os.path.isfile("JSON/q_values.json"):
+        with open("JSON/q_values.json") as json_file:
             q_values = json.load(json_file)
     else:
         q_values= {'F':[0,0],'M':[0,0],'A2':[0,0],'A3':[0,0],'A4':[0,0],'A5':[0,0],'PC2':[0,0], 'PC3':[0,0], 'PC4':[0,0], 'PC5':[0,0]}
@@ -219,7 +221,7 @@ async def run():
             
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
             q_values[old_status][action_index] = new_q_value #actualización
-            with open("q_values.json", 'w') as outfile:
+            with open("JSON/q_values.json", 'w') as outfile:
                 json.dump(q_values, outfile) #actualizacion en json
 
         await reset_episode(drone, episode)

@@ -227,14 +227,11 @@ class Wildfire:
                 Wildfire.count_actions = 0
             else:
                 Wildfire.count_actions+=1
-                if(status == "PC10"):
-                    reward= -50
-                else: 
-                    fire_reward = 0
-                    if Wildfire.dicc_raster[point][2]:
-                        fire_reward = 20 / (1 + Wildfire.count_actions/5)
-                    
-                    reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status] + fire_reward
+                fire_reward = 0
+                if Wildfire.dicc_raster[point][2]:
+                    fire_reward = 20 / (1 + Wildfire.count_actions/5)
+                
+                reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status] + fire_reward
                 Wildfire.points_time[point] = now
                 Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(reward,2)))
             return reward

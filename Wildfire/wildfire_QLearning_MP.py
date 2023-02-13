@@ -320,8 +320,9 @@ class Wildfire:
                     return "F"
                 if is_flying:
                     Wildfire.record[idDrone].append("M")
-                    print("Mayday! Mayday! Drone without battery " + "(M)")
-
+                    text_log = "Mayday! Mayday! Drone without battery " + "(M)"
+                    Wildfire.log_actions_states.info(text_log)
+                    print(text_log)
                     return "M"
             
             status = point+str(battery_status)
@@ -362,9 +363,11 @@ class Wildfire:
                             break
                         
             await asyncio.sleep(4)
-            print("Starting new episode - Episode " + str(episode+1))
-
-        
+            text_log = "Starting new episode - Episode " + str(episode+1)
+            Wildfire.log_actions_states.critical(text_log)
+            Wildfire.log_point_matrix.critical(text_log)
+            Wildfire.log_rewards.critical(text_log)
+            print(text_log)
         global is_flying
         is_flying = True
 

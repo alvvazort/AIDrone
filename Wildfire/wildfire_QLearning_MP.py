@@ -216,7 +216,7 @@ class Wildfire:
             monitorized_time = Wildfire.points_time[point]
             fecha_now = datetime.datetime.strptime(now, '%H:%M:%S')
             fecha_monitorized_time = datetime.datetime.strptime(monitorized_time, '%H:%M:%S')
-            
+            reward = 0.
             diff = (fecha_now - fecha_monitorized_time)/ timedelta(minutes=1) 
 
             if Wildfire.last_action[idDrone] == "go_to":
@@ -226,14 +226,15 @@ class Wildfire:
                     reward = Wildfire.rewards[status]
                 Wildfire.count_actions = 0
             else:
-                Wildfire.count_actions+=1
-                fire_reward = 0
-                if Wildfire.dicc_raster[point][2]:
-                    fire_reward = 20 / (1 + Wildfire.count_actions/5)
-                
-                reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status] + fire_reward
-                Wildfire.points_time[point] = now
-                Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(reward,2)))
+                if point != "PC":
+                    Wildfire.count_actions+=1
+                    fire_reward = 0
+                    if Wildfire.dicc_raster[point][2]:
+                        fire_reward = 20 / (1 + Wildfire.count_actions/5)
+                    
+                    reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status] + fire_reward
+                    Wildfire.points_time[point] = now
+                    Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(reward,2)))
             return reward
 
     async def AIDrone(idDrone,drone, episode):
@@ -400,8 +401,8 @@ class Wildfire:
         for k,v in Wildfire.dicc_raster.items():
             Wildfire.dicc_raster[k] = (Wildfire.dicc_raster[k][0], Wildfire.dicc_raster[k][1], False)
         
-        print("Accumulated reward: " + str(round(Wildfire.total_reward,2)))
         await reset_episode(drone, episode)
+        print("Accumulated reward: " + str(round(Wildfire.total_reward,2)))
         Wildfire.log_rewards.info("Accumulated reward of episode " + str(episode) + ": " + str(round(Wildfire.total_reward,2)))
         Wildfire.total_reward = 0.
             

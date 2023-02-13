@@ -14,6 +14,8 @@ import os
 import json
 import fire
 import logging
+from colorama import Fore, Back, Style
+
 
 PORT = 14540
 NUMPOINTS = 5
@@ -176,17 +178,29 @@ class Wildfire:
             pass
         for k,v in Wildfire.dicc_raster.items():
             state=""
-            if "Hueco" in k:
-                state="🌳"
-            else:
-                state=k
-            if v[2]:
-                state="🔥"
-            try: 
-                if drone_point == k:
-                    state = "🚁"
-            except:
-                pass
+            
+
+            if v[2] == True:
+                if "Hueco" in k :
+                    state="🔥🍂"
+                else: # Punto de vigilancia
+                    state=k+"🔥"
+                    try: 
+                        if drone_point == k:
+                            state = k +"🚒"
+                    except:
+                        pass
+            else: # No hay fuego
+                if "Hueco" in k :
+                    state="🌳🌿"
+                else: # Punto de vigilancia
+                    state=k+"🌿"
+                    try: 
+                        if drone_point == k:
+                            state = k +"🚁"
+                    except:
+                        pass
+
             matrix_razer[v[0]][v[1]]=state
         Wildfire.log_point_matrix.info("\n" + str(matrix_razer))
         print(matrix_razer)
@@ -392,7 +406,7 @@ class Wildfire:
         Wildfire.total_reward = 0.
             
     async def run_fire():
-        await asyncio.sleep(10)
+        await asyncio.sleep(60)
         fire.start_dicc_fire_time(Wildfire.dicc_raster)
         while(True):    
             fire_points = [(k,v) for k, v in Wildfire.dicc_raster.items() if v[2] == True]

@@ -132,7 +132,10 @@ class Wildfire:
                     
         def update_status():  
             def get_status_recursive(num_status_drones): # Recursividad (Tantos for como numDrones haya)
-                
+                ####
+                # Se ha hecho esta función recursiva debido a que de esta manera
+                # podemos hacer un bucle for por cada drone (No una iteración, si no un bucle nuevo)
+                ####
                 num_status_drones+=1
                 if(num_status_drones<NUMDRONES):
                     for point in list(Wildfire.POINTS.keys()):

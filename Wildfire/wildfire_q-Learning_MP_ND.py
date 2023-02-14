@@ -50,7 +50,7 @@ class Wildfire:
     longitude_origin = 0
     absolute_altitude_origin = 0
     flying_alt = 80
-    is_flying = False
+    is_flying = []
     record = []
     PC = Point(latitude_origin, longitude_origin)
     POINTS = {}
@@ -97,7 +97,7 @@ class Wildfire:
         async for position in drone.telemetry.position():
             return position.relative_altitude_m
                 
-    def update_constants():         # TODO MUCHAS COSAS 
+    def update_constants():         
         def update_points():
             
             PC = Point(Wildfire.latitude_origin, Wildfire.longitude_origin)
@@ -130,16 +130,26 @@ class Wildfire:
                 Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
                 coordenadas[points[num_point]] = [latitude_point, longitude_point]
                     
-        def update_status():
-            for point in list(Wildfire.POINTS.keys()):
-                for battery_level in range(2,11):
-                    status = point + str(battery_level)
-                    STATUS.append(status)
+        def update_status():  
+            def get_status_recursive(num_status_drones): # Recursividad (Tantos for como numDrones haya)
+                
+                num_status_drones+=1
+                if(num_status_drones<NUMDRONES):
+                    for point in list(Wildfire.POINTS.keys()):
+                        for battery_level in range(2,11): 
+                            status = point + str(battery_level)
+                            STATUS.append(status)
+                    return get_status_recursive(num_status_drones)
+                else:
+                    return STATUS
+
+            num_status_drones=0
+            get_status_recursive(num_status_drones)
         
         def update_q_values():
             # Si existe el json con los qvalues lo carga
-            if os.path.isfile("JSON/q_values_"+str(NUMPOINTS)+"P.json"):
-                with open("JSON/q_values_"+str(NUMPOINTS)+"P.json") as json_file:
+            if os.path.isfile("JSON/q_values_"+str(NUMPOINTS)+"P_" + str(NUMDRONES) +"D.json"):
+                with open("JSON/q_values_"+str(NUMPOINTS)+"P_" + str(NUMDRONES) +"D.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
             else:
                 for status in STATUS:
@@ -202,7 +212,8 @@ class Wildfire:
         Wildfire.log_point_matrix.info("\n" + str(matrix_razer))
         print(matrix_razer)
 
-    def get_updated_rewards(idDrone, status):
+    def get_updated_rewards(idDrone, status):   # TODO cambiar a multiple
+        
         if status == "M":
             return -5000
         elif status == "F":
@@ -236,8 +247,8 @@ class Wildfire:
 
     async def AIDrone(episode):
 
-        async def go_to(idDrone, point):        # TODO pasarle el atributo idDrone y drone a act y go_to
-
+        async def go_to(idDrone, point):        
+            drone = Wildfire.drones[idDrone]
             global is_flying
             if not is_flying:
                 print("-- Arming")
@@ -261,6 +272,8 @@ class Wildfire:
                     break
         
         async def act(idDrone):
+            
+            drone = Wildfire.drones[idDrone]
             actual_point = Wildfire.record[idDrone][-1]
             battery = round(await Wildfire.get_battery(drone)*100,2)
             actual_status = await get_status()    
@@ -305,9 +318,9 @@ class Wildfire:
             battery_status = [k for k, v in battery_levels.items() if v >= battery][0]
             return battery_status
 
-        async def get_status(drone):  # Formato de estado: Punto Batería (x cada drone)
+        async def get_status():  # Formato de estado: Punto Batería (x cada drone)
             status = ""
-            for idDrone, drone in enumerate(Wildfire.drones):
+            for idDrone, drone in enumerate(Wildfire.drones):   # TODO paralelizar en un futuro
                 battery_status = await get_battery_status(drone)
                 point = Wildfire.record[idDrone][-1]
                 global is_flying
@@ -333,14 +346,23 @@ class Wildfire:
             else: #choose a random action
                 return np.random.randint(NUMPOINTS+2) # Un posibilidad por cada go_to a cada punto + 1 por act + 1 por PC
         
-        async def get_next_status(action_index, idDrone):
-            action=Wildfire.actions_functions[action_index]
-            if(action=="act"):
-                await act(idDrone)
-            else: 
-                point_string= action.split("_")[-1]
-                point = Wildfire.POINTS[point_string]
-                await go_to(idDrone, point)
+        async def get_next_status(action_index):
+            async def do_action(action, idDrone):
+                if(action=="act"):
+                    await act(idDrone)
+                else: 
+                    point_string= action.split("_")[-1]
+                    point = Wildfire.POINTS[point_string]
+                    await go_to(idDrone, point)
+
+            actions=Wildfire.actions_functions[action_index] # Devuelve texto que descifra la accion Ex: act,go_to_B
+            # Split por comas para cada acción
+            actions_list=actions.split(",")
+            loop = asyncio.get_event_loop()
+            for idDrone, action in enumerate(actions_list):
+                asyncio.ensure_future(do_action(action, idDrone))
+            loop.run_until_complete() # Cuando todos hayan realizado la acción se calcula el estado
+            
             return await get_status()
 
         async def reset_episode(drone, episode):
@@ -365,25 +387,22 @@ class Wildfire:
             Wildfire.log_point_matrix.critical(text_log)
             Wildfire.log_rewards.critical(text_log)
             print(text_log)
+        
         global is_flying
-        is_flying = True
-
+        for idDrone in NUMDRONES:
+            is_flying.append(True)
+        
         status = await get_status()
 
-        while not (status == "M" or status == "F"):
+        while not (status == "MM" or status == "MF" or status == "FF" or status == "FM"): #TODO AUTOMATIZAR Cada episodio se termina cuando todos los drones mueren
             
-            action_index=get_next_action(status, EPSILON) #       
+            action_index=get_next_action(status, EPSILON)  
 
             # perform the chosen action, and transition to the next state (i.e., move to the next location)
             old_status = status # store the old row and column indexes
 
-            loop = asyncio.get_event_loop() # Paralelizamos las tareas realizadas por cada dron
-            for idDrone in range(NUMDRONES):
-                status = asyncio.ensure_future(await get_next_status(action_index, idDrone))
-            loop.run_until_complete()
+            status = await get_next_status(action_index)     # Esperar al que tarde más y a partir de ahí seguir con la ejecución del codigo
                
-            # Esperar al que tarde más y a partir de ahí seguir con la ejecución del codigo
-
             #receive the reward for moving to the new state, and calculate the temporal difference
             reward = Wildfire.get_updated_rewards(idDrone, status)
             print("Reward: " + str(round(reward,2)))
@@ -396,14 +415,18 @@ class Wildfire:
             new_q_value = old_q_value + (LEARNING_RATE * temporal_difference)
             Wildfire.q_values[old_status][action_index] = new_q_value #actualización
 
-            with open("JSON/q_values_"+str(NUMPOINTS)+"P.json", 'w') as outfile:
+            with open("JSON/q_values_"+str(NUMPOINTS)+"P_" + str(NUMDRONES) +"D.json", 'w') as outfile:
                 json.dump(Wildfire.q_values, outfile, indent=1) #actualización en json
         
         print("Map reset, wildfire was extinguished")
         for k,v in Wildfire.dicc_raster.items():
             Wildfire.dicc_raster[k] = (Wildfire.dicc_raster[k][0], Wildfire.dicc_raster[k][1], False)
         
-        await reset_episode(drone, episode)
+        loop = asyncio.get_event_loop()     # Se reinicia el problema, y todos los drones a la vez se van a PC
+        for drone in Wildfire.drones:
+            asyncio.ensure_future(await reset_episode(drone, episode))
+        loop.run_until_complete() 
+
         print("Accumulated reward: " + str(round(Wildfire.total_reward,2)))
         Wildfire.log_rewards.info("Accumulated reward of episode " + str(episode) + ": " + str(round(Wildfire.total_reward,2)))
         Wildfire.total_reward = 0.
@@ -426,6 +449,7 @@ class Wildfire:
         drone = System(mavsdk_server_address="127.0.0.1", port=portSys)
         
         await drone.connect()
+        Wildfire.drones.append(drone)
         return drone
 
     async def global_position(drone):
@@ -444,32 +468,39 @@ class Wildfire:
             Wildfire.flying_alt = Wildfire.absolute_altitude_origin + 60
             break
 
+    async def start_drone(idDrone):
+        await Wildfire.connect_drone(idDrone)
+        Wildfire.global_position(Wildfire.drones[idDrone])
+        Wildfire.terrain_info(Wildfire.drones[idDrone])
+
     async def run():
         Wildfire.log_rewards.info("Action Point Reward")
 
-        for idDrone in range(NUMPOINTS):            # Conexiones con todos los drones
-            drone_connection = await Wildfire.connect_drone(idDrone)
-            Wildfire.drones.append(drone_connection)
-        
-        for drone in Wildfire.drones:
-            Wildfire.global_position(drone)
+        loop = asyncio.get_event_loop() # Paralelizamos las tareas realizadas por cada dron
+        for idDrone in range(NUMDRONES): 
+            asyncio.ensure_future(Wildfire.start_drone(idDrone))
+        loop.run_until_complete()    
 
-        for drone in Wildfire.drones:
-            Wildfire.terrain_info(drone)
-
-        Wildfire.update_constants()         # TODO verlo
+        Wildfire.update_constants()         
         print("The " + str(NUMPOINTS) + " points of the problem have been rasterized as: ")
         Wildfire.pretty_print_dicc_raster()
-        Wildfire.record.append([])
+        Wildfire.record.append([])      #TODO ver si es necesario
         Wildfire.last_action.append([])
-        for episode in range(NUM_EPOCHS): # Cada episodio se termina cuando todos los drones mueren
+        for episode in range(NUM_EPOCHS): 
             Wildfire.update_points_time()
-            for drone in Wildfire.drones:
-                print("-- Arming")
-                await drone.action.arm()
+            #TODO Refactorizar
+            loop = asyncio.get_event_loop()         # arm paralelizado
+            for idDrone,drone in enumerate(Wildfire.drones):
+                asyncio.ensure_future(await drone.action.arm())
+                print("-- Arming Drone " + str(idDrone))
+            loop.run_until_complete() 
+
+            loop = asyncio.get_event_loop()         # takeoff paralelizado
+            for idDrone,drone in enumerate(Wildfire.drones):
+                asyncio.ensure_future(await drone.action.takeoff())
+                print("-- Taking off Drone " + str(idDrone))
+            loop.run_until_complete() 
                 
-                print("-- Taking off")
-                await drone.action.takeoff()
             await Wildfire.AIDrone(episode)    
 
         print("Training completed")

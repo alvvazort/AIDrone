@@ -18,7 +18,7 @@ import logging
 PORT = 14540
 NUMPOINTS = 5
 NUMDRONES = 2 
-STATUS = ['F','M'] 
+STATUS = [] 
 EPSILON = 0.9
 DISCOUNT_FACTOR = 0.9
 LEARNING_RATE = 0.9
@@ -68,7 +68,6 @@ class Wildfire:
     log_actions_states = setup_logger('actions_states', "LOGS/actions_states_"+str(NUMPOINTS)+"P_"+str(NUMDRONES)+"D.log")
     log_rewards = setup_logger('rewards', "LOGS/rewards_"+str(NUMPOINTS)+"P_"+str(NUMDRONES)+"D.log")
     
-
     async def print_battery(drone):
         async for battery in drone.telemetry.battery():
             print(f"{battery.remaining_percent}")
@@ -97,7 +96,8 @@ class Wildfire:
         async for position in drone.telemetry.position():
             return position.relative_altitude_m
                 
-    def update_constants():         
+    def update_constants():    
+
         def update_points():
             
             PC = Point(Wildfire.latitude_origin, Wildfire.longitude_origin)
@@ -130,50 +130,78 @@ class Wildfire:
                 Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
                 coordenadas[points[num_point]] = [latitude_point, longitude_point]
                     
-        def update_status():  
-            status_recursive=""
-            def get_status_recursive(num_status_drones): # Recursividad (Tantos for como numDrones haya)
-                ####
-                # Se ha hecho esta función recursiva debido a que de esta manera
-                # podemos hacer un bucle for por cada drone (No una iteración, si no un bucle nuevo)
-                ####
-                num_status_drones+=1
-                
-                if(num_status_drones<NUMDRONES):
-                    for point in list(Wildfire.POINTS.keys()):# Estos dos bucles se necesitan x cada Drone
-                        for battery_level in range(2,11): 
-                            status_recursive += point + str(battery_level)
-                    return get_status_recursive(num_status_drones)
-                else:
-                    STATUS.append(status_recursive)
-                    status_recursive=""
+        def update_status():
+            def combine_status(terms, accum=''):
+                last = (len(terms) == 1)
+                n = len(terms[0])
+                for i in range(n):
+                    if accum != '':
+                        item = accum + "-" + terms[0][i] 
+                    else:
+                        item = terms[0][i] 
+                    if last:
+                        STATUS.append(item)
+                    else:
+                        combine_status(terms[1:], item)   
 
-            num_status_drones=0
-            get_status_recursive(num_status_drones)
-        
+            estados = ["M","F"]
+            for point in list(Wildfire.POINTS.keys()):
+                for battery_level in range(2,11):
+                    estados.append(point + str(battery_level))
+            
+            all_estados = []
+            for idDrone in range(NUMDRONES):
+                all_estados.append(estados)
+
+            combine_status(all_estados)
+
         def update_q_values():
             # Si existe el json con los qvalues lo carga
             if os.path.isfile("JSON/q_values_"+str(NUMPOINTS)+"P_" + str(NUMDRONES) +"D.json"):
                 with open("JSON/q_values_"+str(NUMPOINTS)+"P_" + str(NUMDRONES) +"D.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
             else:
+                num_acciones = math.pow(NUMPOINTS+2,NUMDRONES)     # goto a num points + act + go_to pc
                 for status in STATUS:
-                    Wildfire.q_values[status]=list(np.zeros(NUMPOINTS+2)) # Un cero por cada go_to a cada punto + 1 por act + 1 por PC
+                    Wildfire.q_values[status]=list(np.zeros(num_acciones))
 
         def update_rewards():
             
-            for status in STATUS:
-                if status == "M":
-                    Wildfire.rewards[status]= -5000
-                elif "PC" in status or status == "F":
-                    Wildfire.rewards[status]= 0
-                else:
-                    Wildfire.rewards[status]= 20
+            for multiple_status in STATUS:
+                all_status = multiple_status.split("-") 
+                accum_reward = 0.
+                for status in all_status:
+                    if status == "M":
+                        accum_reward += -5000
+                    elif "PC" in status or status == "F":
+                        accum_reward += 0
+                    else:
+                        accum_reward += 20
+                Wildfire.rewards[multiple_status]=accum_reward
                     
         def update_actions(): 
-            Wildfire.actions_functions.append("act")
+            def combine_actions(terms, accum=''):
+                last = (len(terms) == 1)
+                n = len(terms[0])
+                for i in range(n):
+                    if accum != '':
+                        item = accum + "-" + terms[0][i] 
+                    else:
+                        item = terms[0][i] 
+                    if last:
+                        Wildfire.actions_functions.append(item)
+                    else:
+                        combine_actions(terms[1:], item)  
+            
+            actions_drone=[]
+            actions_drone.append("act")
             for point in list(Wildfire.POINTS.keys()):
-                Wildfire.actions_functions.append("go_to_" + point)
+                actions_drone.append("go_to_" + point)
+            
+            acciones = []
+            for idDrone in range(NUMDRONES):
+                acciones.append(actions_drone)
+            combine_actions(acciones)
   
         update_points()
         update_status()

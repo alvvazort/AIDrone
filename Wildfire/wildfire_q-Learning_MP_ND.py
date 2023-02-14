@@ -131,20 +131,22 @@ class Wildfire:
                 coordenadas[points[num_point]] = [latitude_point, longitude_point]
                     
         def update_status():  
+            status_recursive=""
             def get_status_recursive(num_status_drones): # Recursividad (Tantos for como numDrones haya)
                 ####
                 # Se ha hecho esta función recursiva debido a que de esta manera
                 # podemos hacer un bucle for por cada drone (No una iteración, si no un bucle nuevo)
                 ####
                 num_status_drones+=1
+                
                 if(num_status_drones<NUMDRONES):
-                    for point in list(Wildfire.POINTS.keys()):
+                    for point in list(Wildfire.POINTS.keys()):# Estos dos bucles se necesitan x cada Drone
                         for battery_level in range(2,11): 
-                            status = point + str(battery_level)
-                            STATUS.append(status)
+                            status_recursive += point + str(battery_level)
                     return get_status_recursive(num_status_drones)
                 else:
-                    return STATUS
+                    STATUS.append(status_recursive)
+                    status_recursive=""
 
             num_status_drones=0
             get_status_recursive(num_status_drones)

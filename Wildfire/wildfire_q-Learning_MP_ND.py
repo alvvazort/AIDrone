@@ -307,23 +307,19 @@ class Wildfire:
                     Wildfire.last_action[idDrone] = "go_to"
                     break
         
-        async def act(idDrone):
-            print("Tamos en el Drone "+str(idDrone))
+        async def act(idDrone, multiple_status):
+            print(idDrone)
             drone = Wildfire.drones[idDrone]
-            print("drone en el Drone "+str(idDrone))
             actual_point = Wildfire.record[idDrone][-1]
-            print("point en el Drone "+str(idDrone))
             battery = round(await Wildfire.get_battery(drone)*100,2)
-            print("battery en el Drone "+str(idDrone))
-            multiple_status = await get_status()    
-            print("status en el Drone "+str(idDrone))
-            actual_status= multiple_status.split("-")[idDrone]
-            print("mas estatus en el Drone "+str(idDrone))
+            print(battery)
+            actual_status = multiple_status.split("-")[idDrone]
+            print(actual_status)
 
             if not (actual_status == "M" or actual_status == "F"):
-
                 if(actual_point == "PC"):
-                    
+                    print(idDrone)
+                    print("Haciendo el act")
                     if Wildfire.is_flying[idDrone]:      #Se optimiza para que cargue más rapido cuando esté en el suelo
                         text_log = "Drone "+str(idDrone)+" acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
                         print(text_log)
@@ -366,7 +362,6 @@ class Wildfire:
             for idDrone, drone in enumerate(Wildfire.drones):   # TODO paralelizar en un futuro
                 battery_status = await get_battery_status(drone)
                 point = Wildfire.record[idDrone][-1]
-
                 if(battery_status==1):
                     if(point=="M"):
                         return "F"
@@ -390,16 +385,17 @@ class Wildfire:
         async def get_next_status(action_index):
             async def do_action(action, idDrone):
                 if(action=="act"):
-                    await act(idDrone)
+                    actual_status = await get_status()
+                    await act(idDrone, actual_status)
                 else: 
                     point_string= action.split("_")[-1]
                     point = Wildfire.POINTS[point_string]
                     await go_to(idDrone, point)
 
             actions=Wildfire.actions_functions[action_index] # Devuelve texto que descifra la accion Ex: act,go_to_B
+            print(actions)
             # Split por comas para cada acción
             actions_list=actions.split("-")
-            print(actions_list)
             do_action_list=[]
             for idDrone, action in enumerate(actions_list):
                 do_action_list.append(do_action(action, idDrone))
@@ -428,7 +424,6 @@ class Wildfire:
             for idDrone,drone in enumerate(Wildfire.drones):
                 go_home.append(go_home_func(drone,idDrone))
             await asyncio.gather(*go_home)
-            #Le doy :)aaaaaaaaaaaaaaaaa
 
             await asyncio.sleep(4)
             text_log = "Starting new episode - Episode " + str(episode+1)
@@ -441,11 +436,10 @@ class Wildfire:
             Wildfire.is_flying.append(True)
         
         status = await get_status()
-        print(status)
         while not (status == "MM" or status == "MF" or status == "FF" or status == "FM"): #TODO AUTOMATIZAR Cada episodio se termina cuando todos los drones mueren
             
             action_index=get_next_action(status, EPSILON)  
-
+            
             # perform the chosen action, and transition to the next state (i.e., move to the next location)
             old_status = status # store the old row and column indexes
 

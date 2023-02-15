@@ -286,19 +286,18 @@ class Wildfire:
 
         async def go_to(idDrone, point):        
             drone = Wildfire.drones[idDrone]
-            global is_flying
-            if not is_flying:
+            if not Wildfire.is_flying[idDrone]:
                 print("-- Arming")
                 await drone.action.arm()
                 print("-- Taking off")
                 await drone.action.takeoff()
                 
             await drone.action.goto_location(point.latitude_deg, point.longitude_deg, Wildfire.flying_alt, 0)
-            is_flying=True
+            Wildfire.is_flying[idDrone]=True
 
             battery = round(await Wildfire.get_battery(drone)*100,2)    
             name_point = [k for k, v in Wildfire.POINTS.items() if v == point][0]
-            text_log="Going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status(drone, idDrone) + ")"
+            text_log="Going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
             print(text_log)
             Wildfire.log_actions_states.info(text_log)
             async for position in drone.telemetry.position():
@@ -314,11 +313,10 @@ class Wildfire:
             actual_point = Wildfire.record[idDrone][-1]
             battery = round(await Wildfire.get_battery(drone)*100,2)
             actual_status = await get_status()    
-            global is_flying
 
             if not (actual_status == "M" or actual_status == "F"):
                 if(actual_point == "PC"):
-                    if is_flying:      #Se optimiza para que cargue más rapido cuando esté en el suelo
+                    if Wildfire.is_flying[idDrone]:      #Se optimiza para que cargue más rapido cuando esté en el suelo
                         text_log = "Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
                         print(text_log)
                         Wildfire.log_actions_states.info(text_log)
@@ -332,7 +330,7 @@ class Wildfire:
                                 Wildfire.log_actions_states.info("Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
                             i = i+1
                             if not in_air_local:
-                                is_flying=False
+                                Wildfire.is_flying[idDrone]=False
                                 break
                     text_log = "Charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
                     print(text_log)
@@ -360,12 +358,11 @@ class Wildfire:
             for idDrone, drone in enumerate(Wildfire.drones):   # TODO paralelizar en un futuro
                 battery_status = await get_battery_status(drone)
                 point = Wildfire.record[idDrone][-1]
-                global is_flying
 
                 if(battery_status==1):
                     if(point=="M"):
                         return "F"
-                    if is_flying:
+                    if Wildfire.is_flying[idDrone]:
                         Wildfire.record[idDrone].append("M")
                         text_log = "Mayday! Mayday! Drone without battery " + "(M)"
                         Wildfire.log_actions_states.info(text_log)
@@ -397,11 +394,19 @@ class Wildfire:
             do_action_list=[]
             for idDrone, action in enumerate(actions_list):
                 do_action_list.append(do_action(action, idDrone))
-            asyncio.gather(*do_action_list)
-            
+            await asyncio.gather(*do_action_list)
             return await get_status() # Cuando todos hayan realizado la acción se calcula el estado
 
         async def reset_episode(drone, episode):
+
+            async def go_home_func(drone,idDrone):
+                if Wildfire.is_flying[idDrone]:  
+                    await drone.action.land()
+                    async for in_air_local in drone.telemetry.in_air():
+                        if not in_air_local:
+                            Wildfire.is_flying[idDrone]=False
+                            break
+
             await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt, 0)
             async for position in drone.telemetry.position():
                 #Comprueba que llega al punto    
@@ -409,14 +414,13 @@ class Wildfire:
                     break
             
             # Aterriza y carga la batería
-            global is_flying
-            if is_flying:      
-                    await drone.action.land()
-                    async for in_air_local in drone.telemetry.in_air():
-                        if not in_air_local:
-                            is_flying=False
-                            break
-                        
+            go_home = []
+            
+            for idDrone,drone in enumerate(Wildfire.drones):
+                go_home.append(go_home_func(drone,idDrone))
+            await asyncio.gather(*go_home)
+            #Le doy :)aaaaaaaaaaaaaaaaa
+
             await asyncio.sleep(4)
             text_log = "Starting new episode - Episode " + str(episode+1)
             Wildfire.log_actions_states.critical(text_log)
@@ -517,6 +521,7 @@ class Wildfire:
             os.popen('sh '+ full_path + " " + str(NUMDRONES))
 
         start_servers()
+        await asyncio.sleep(5)
         Wildfire.log_rewards.info("Action Point Reward")
 
         drone_starts=[]

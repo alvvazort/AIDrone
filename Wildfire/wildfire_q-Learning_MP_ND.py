@@ -299,7 +299,7 @@ class Wildfire:
 
             battery = round(await Wildfire.get_battery(drone)*100,2)    
             name_point = [k for k, v in Wildfire.POINTS.items() if v == point][0]
-            text_log="Drone "+str(idDrone)+" going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
+            text_log="Drone "+str(idDrone)+" going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
             print(text_log)
             Wildfire.log_actions_states.info(text_log)
             async for position in drone.telemetry.position():

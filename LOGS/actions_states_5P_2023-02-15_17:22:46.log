@@ -1,0 +1,10 @@
+2023-02-15 17:22:46,933 INFO Creation of log actions_states
+2023-02-15 17:23:06,844 INFO Drone 0 acting on point PC with 100.0 percentage at 17:23:06 (PC10)
+2023-02-15 17:23:06,874 INFO Drone 1 acting on point PC with 100.0 percentage at 17:23:06 (PC10)
+2023-02-15 17:23:08,562 INFO Drone 0 trying to land, still in air. Still 0.39 from ground.
+2023-02-15 17:23:08,582 INFO Drone 1 trying to land, still in air. Still 0.42 from ground.
+2023-02-15 17:23:16,582 INFO Drone 0 charging battery at PC with 97.0 percentage at 17:23:16 (PC10)
+2023-02-15 17:23:20,861 INFO Drone 1 charging battery at PC with 98.0 percentage at 17:23:20 (PC10)
+2023-02-15 17:23:35,522 INFO Drone 0 charging battery at PC with 100.0 percentage at 17:23:35 (PC10)
+2023-02-15 17:23:35,541 INFO Drone 1 charging battery at PC with 100.0 percentage at 17:23:35 (PC10)
+2023-02-15 17:23:51,008 INFO Drone 1 going to A with 100.0 percentage at 17:23:47 (PC10-PC10)

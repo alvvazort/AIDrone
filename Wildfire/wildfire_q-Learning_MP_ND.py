@@ -205,7 +205,7 @@ class Wildfire:
   
         update_points()
         update_status()
-        update_q_values()
+        update_q_values() 
         update_rewards()
         update_actions()
         
@@ -317,7 +317,7 @@ class Wildfire:
             if not (actual_status == "M" or actual_status == "F"):
                 if(actual_point == "PC"):
                     if Wildfire.is_flying[idDrone]:      #Se optimiza para que cargue más rapido cuando esté en el suelo
-                        text_log = "Acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
+                        text_log = "Drone "+str(idDrone)+" acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
                         print(text_log)
                         Wildfire.log_actions_states.info(text_log)
                         await drone.action.land()
@@ -325,19 +325,19 @@ class Wildfire:
                         i=0
                         async for in_air_local in drone.telemetry.in_air():
                             if(i%20==0):
-                                text_log = "Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground."
+                                text_log = "Drone "+str(idDrone)+" trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground."
                                 print(text_log)
-                                Wildfire.log_actions_states.info("Trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
+                                Wildfire.log_actions_states.info("Drone "+str(idDrone)+" trying to land, still in air. Still " + str(round(await Wildfire.get_altitude(drone),2)) + " from ground.")
                             i = i+1
                             if not in_air_local:
                                 Wildfire.is_flying[idDrone]=False
                                 break
-                    text_log = "Charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
+                    text_log = "Drone "+str(idDrone)+" charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
                     print(text_log)
                     Wildfire.log_actions_states.info(text_log)
 
                 else:
-                    text_log = "Monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
+                    text_log = "Drone "+str(idDrone)+" monitoring point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
                     print(text_log)
                     Wildfire.log_actions_states.info(text_log)
                     

@@ -167,7 +167,7 @@ class Wildfire:
 
         def update_rewards():
             
-            for multiple_status in STATUS:
+            '''for multiple_status in STATUS:
                 all_status = multiple_status.split("-") 
                 accum_reward = 0.
                 for status in all_status:
@@ -177,7 +177,18 @@ class Wildfire:
                         accum_reward += 0
                     else:
                         accum_reward += 20
-                Wildfire.rewards[multiple_status]=accum_reward
+                Wildfire.rewards[multiple_status]=accum_reward'''
+            estados = ["M","F"]
+            for point in list(Wildfire.POINTS.keys()):
+                for battery_level in range(2,11):
+                    estados.append(point + str(battery_level))
+            for status in estados:
+                if status == "M":
+                    Wildfire.rewards[status]= -5000
+                elif "PC" in status or status == "F":
+                    Wildfire.rewards[status]= 0
+                else:
+                    Wildfire.rewards[status]= 20
                     
         def update_actions(): 
             def combine_actions(terms, accum=''):
@@ -294,7 +305,7 @@ class Wildfire:
                 print("-- Taking off")
                 await drone.action.takeoff()
                 
-            await drone.action.goto_location(point.latitude_deg, point.longitude_deg, Wildfire.flying_alt, 0)
+            await drone.action.goto_location(point.latitude_deg, point.longitude_deg, Wildfire.flying_alt + idDrone, 0)
             Wildfire.is_flying[idDrone]=True
 
             battery = round(await Wildfire.get_battery(drone)*100,2)    
@@ -342,7 +353,7 @@ class Wildfire:
                     print(text_log)
                     Wildfire.log_actions_states.info(text_log)
                     
-                    await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude_origin + 40)
+                    await drone.action.do_orbit(radius_m=2.0, velocity_ms=10.0, yaw_behavior = OrbitYawBehavior.HOLD_FRONT_TO_CIRCLE_CENTER, latitude_deg = Wildfire.POINTS[actual_point].latitude_deg, longitude_deg = Wildfire.POINTS[actual_point].longitude_deg, absolute_altitude_m = Wildfire.absolute_altitude_origin + 20 + idDrone)
                     await asyncio.sleep(10)
 
                 Wildfire.last_action[idDrone] = "act"
@@ -377,7 +388,7 @@ class Wildfire:
             if np.random.random() < epsilon:
                 return np.argmax(Wildfire.q_values[state])
             else: #choose a random action
-                return np.random.randint(NUMPOINTS+2) # Un posibilidad por cada go_to a cada punto + 1 por act + 1 por PC
+                return np.random.randint(len(Wildfire.actions_functions)) # Un posibilidad por cada go_to a cada punto + 1 por act + 1 por PC
         
         async def get_next_status(action_index):
             async def do_action(action, idDrone,multiple_status):

@@ -372,13 +372,13 @@ class Wildfire:
                 point = Wildfire.record[idDrone][-1]
                 if(battery_status==1):
                     if(point=="M"):
-                        return "F"
+                        status+= "F"
                     if Wildfire.is_flying[idDrone]:
                         Wildfire.record[idDrone].append("M")
                         text_log = "Mayday! Mayday! Drone without battery " + "(M)"
                         Wildfire.log_actions_states.info(text_log)
                         print(text_log)
-                        return "M"
+                        status+= "M-"
                 status += point+str(battery_status)+"-"
             return status[:-1] # Elimina el último guión
 
@@ -444,7 +444,7 @@ class Wildfire:
             Wildfire.is_flying.append(True)
         
         status = await get_status()
-        while not (status == "MM" or status == "MF" or status == "FF" or status == "FM"): #TODO AUTOMATIZAR Cada episodio se termina cuando todos los drones mueren
+        while not (status == "M-M" or status == "M-F" or status == "F-F" or status == "F-M"): #TODO AUTOMATIZAR Cada episodio se termina cuando todos los drones mueren
             
             action_index=get_next_action(status, EPSILON)  
             

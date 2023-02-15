@@ -245,7 +245,7 @@ class Wildfire:
         Wildfire.log_point_matrix.info("\n" + str(matrix_razer))
         print(matrix_razer)
 
-    def get_updated_rewards(status):   # TODO cambiar a multiple
+    def get_updated_rewards(status):
         
         # Formato status: "EstadoDrone1-EstadoDrone2-..."
         status_splitted = status.split("-")
@@ -284,8 +284,10 @@ class Wildfire:
 
     async def AIDrone(episode):
 
-        async def go_to(idDrone, point):        
+        async def go_to(idDrone, point, multiple_status):        
             drone = Wildfire.drones[idDrone]
+            actual_status = multiple_status.split("-")[idDrone]
+
             if not Wildfire.is_flying[idDrone]:
                 print("-- Arming")
                 await drone.action.arm()
@@ -308,18 +310,13 @@ class Wildfire:
                     break
         
         async def act(idDrone, multiple_status):
-            print(idDrone)
             drone = Wildfire.drones[idDrone]
             actual_point = Wildfire.record[idDrone][-1]
             battery = round(await Wildfire.get_battery(drone)*100,2)
-            print(battery)
             actual_status = multiple_status.split("-")[idDrone]
-            print(actual_status)
 
             if not (actual_status == "M" or actual_status == "F"):
                 if(actual_point == "PC"):
-                    print(idDrone)
-                    print("Haciendo el act")
                     if Wildfire.is_flying[idDrone]:      #Se optimiza para que cargue más rapido cuando esté en el suelo
                         text_log = "Drone "+str(idDrone)+" acting on point " + actual_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
                         print(text_log)
@@ -336,7 +333,7 @@ class Wildfire:
                             if not in_air_local:
                                 Wildfire.is_flying[idDrone]=False
                                 break
-                    text_log = "Drone "+str(idDrone)+" charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
+                    text_log = "Drone "+str(idDrone)+" charging battery at " + actual_point + " with " + str(round(await Wildfire.get_battery(drone)*100,2)) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + actual_status + ")"
                     print(text_log)
                     Wildfire.log_actions_states.info(text_log)
 
@@ -383,22 +380,22 @@ class Wildfire:
                 return np.random.randint(NUMPOINTS+2) # Un posibilidad por cada go_to a cada punto + 1 por act + 1 por PC
         
         async def get_next_status(action_index):
-            async def do_action(action, idDrone):
+            async def do_action(action, idDrone,multiple_status):
                 if(action=="act"):
-                    actual_status = await get_status()
-                    await act(idDrone, actual_status)
+                    await act(idDrone, multiple_status)
                 else: 
                     point_string= action.split("_")[-1]
                     point = Wildfire.POINTS[point_string]
-                    await go_to(idDrone, point)
+                    await go_to(idDrone, point, multiple_status)
 
             actions=Wildfire.actions_functions[action_index] # Devuelve texto que descifra la accion Ex: act,go_to_B
             print(actions)
             # Split por comas para cada acción
             actions_list=actions.split("-")
             do_action_list=[]
+            multiple_status= await get_status() 
             for idDrone, action in enumerate(actions_list):
-                do_action_list.append(do_action(action, idDrone))
+                do_action_list.append(do_action(action, idDrone, multiple_status))
             await asyncio.gather(*do_action_list)
             return await get_status() # Cuando todos hayan realizado la acción se calcula el estado
 
@@ -446,7 +443,7 @@ class Wildfire:
             status = await get_next_status(action_index)     # Esperar al que tarde más y a partir de ahí seguir con la ejecución del codigo
                
             #receive the reward for moving to the new state, and calculate the temporal difference
-            reward = Wildfire.get_updated_rewards(idDrone, status)
+            reward = Wildfire.get_updated_rewards(status)
             print("Reward: " + str(round(reward,2)))
             Wildfire.total_reward += reward
                 

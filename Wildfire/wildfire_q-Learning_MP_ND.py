@@ -32,7 +32,7 @@ class Wildfire:
             os.mkdir("LOGS")
         if os.path.isfile(log_file):
             created_at=open(log_file).readline().rstrip().split(",")[0].replace(" ","_")
-            shutil.copy(log_file, "LOGS/"+name+"_"+str(NUMPOINTS)+"P_"+created_at+".log")
+            shutil.copy(log_file, "LOGS/"+name+"_"+str(NUMPOINTS)+"P_"+str(NUMDRONES)+"D_"+created_at+".log")
             os.remove(log_file)
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 
@@ -63,6 +63,7 @@ class Wildfire:
     count_actions= 0
     total_reward = 0.
     drones=[]
+    all_final_status = []
     
     log_point_matrix = setup_logger('point_matrix', "LOGS/points_matrix_"+str(NUMPOINTS)+"P_"+str(NUMDRONES)+"D.log")
     log_actions_states = setup_logger('actions_states', "LOGS/actions_states_"+str(NUMPOINTS)+"P_"+str(NUMDRONES)+"D.log")
@@ -166,18 +167,6 @@ class Wildfire:
                     Wildfire.q_values[status]=list(np.zeros(num_acciones))
 
         def update_rewards():
-            
-            '''for multiple_status in STATUS:
-                all_status = multiple_status.split("-") 
-                accum_reward = 0.
-                for status in all_status:
-                    if status == "M":
-                        accum_reward += -5000
-                    elif "PC" in status or status == "F":
-                        accum_reward += 0
-                    else:
-                        accum_reward += 20
-                Wildfire.rewards[multiple_status]=accum_reward'''
             estados = ["M","F"]
             for point in list(Wildfire.POINTS.keys()):
                 for battery_level in range(2,11):
@@ -262,35 +251,40 @@ class Wildfire:
         status_splitted = status.split("-")
         total_reward=0
         for idDrone, drone_status in enumerate(status_splitted):
-            if drone_status == "M":
-                total_reward+= -5000
-            elif drone_status == "F":
-                total_reward+= 0
-            else: #Calcular recompensa en función del tiempo pasado si se vigila un punto
-                point = Wildfire.record[idDrone][-1]
-                now = datetime.datetime.now().strftime('%H:%M:%S')
-                monitorized_time = Wildfire.points_time[point]
-                fecha_now = datetime.datetime.strptime(now, '%H:%M:%S')
-                fecha_monitorized_time = datetime.datetime.strptime(monitorized_time, '%H:%M:%S')
-                reward = 0.
-                diff = (fecha_now - fecha_monitorized_time)/ timedelta(minutes=1) 
+            same_action = False
+            for i in range(idDrone+1,NUMDRONES):  # Recorremos la lista record viendo el ultimo punto de cada dron, si coincide y además hacen la misma accion
+                if(Wildfire.record[idDrone][-1] == Wildfire.record[i][-1] and Wildfire.last_action[idDrone] == Wildfire.last_action[i]):  # No se le recompensa
+                    same_action= True 
+                
+            if not same_action:
+                if drone_status == "M":
+                    total_reward+= -5000
+                elif drone_status == "F":
+                    total_reward+= 0
+                else: #Calcular recompensa en función del tiempo pasado si se vigila un punto
+                    point = Wildfire.record[idDrone][-1]
+                    now = datetime.datetime.now().strftime('%H:%M:%S')
+                    monitorized_time = Wildfire.points_time[point]
+                    fecha_now = datetime.datetime.strptime(now, '%H:%M:%S')
+                    fecha_monitorized_time = datetime.datetime.strptime(monitorized_time, '%H:%M:%S')
+                    diff = (fecha_now - fecha_monitorized_time)/ timedelta(minutes=1) 
 
-                if Wildfire.last_action[idDrone] == "go_to":
-                    if Wildfire.record[idDrone][-1] == Wildfire.record[idDrone][-2]:
-                        total_reward += -20
+                    if Wildfire.last_action[idDrone] == "go_to":
+                        if Wildfire.record[idDrone][-1] == Wildfire.record[idDrone][-2]:
+                            total_reward += -20
+                        else:
+                            total_reward += Wildfire.rewards[drone_status]
+                        Wildfire.count_actions = 0
                     else:
-                        total_reward += Wildfire.rewards[drone_status]
-                    Wildfire.count_actions = 0
-                else:
-                    if point != "PC":
-                        Wildfire.count_actions+=1
-                        fire_reward = 0
-                        if Wildfire.dicc_raster[point][2]:
-                            fire_reward = 20 / (1 + Wildfire.count_actions/5)
-                        
-                        total_reward += diff * Wildfire.rewards[drone_status] + Wildfire.rewards[drone_status] + fire_reward
-                        Wildfire.points_time[point] = now
-        #Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(total_reward,2)))
+                        if point != "PC":
+                            Wildfire.count_actions+=1
+                            fire_reward = 0
+                            if Wildfire.dicc_raster[point][2]:
+                                fire_reward = 20 / (1 + Wildfire.count_actions/5)
+                            
+                            total_reward += diff * Wildfire.rewards[drone_status] + Wildfire.rewards[drone_status] + fire_reward
+                            Wildfire.points_time[point] = now
+            #Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(total_reward,2)))
         return total_reward
 
     async def AIDrone(episode):
@@ -410,21 +404,22 @@ class Wildfire:
             await asyncio.gather(*do_action_list)
             return await get_status() # Cuando todos hayan realizado la acción se calcula el estado
 
-        async def reset_episode(drone, episode):
+        async def reset_episode(episode):
 
             async def go_home_func(drone,idDrone):
+                await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt, 0)
+                async for position in drone.telemetry.position():
+                    #Comprueba que llega al punto    
+                    if abs(position.latitude_deg-Wildfire.POINTS["PC"].latitude_deg)<0.00001 and abs(position.longitude_deg-Wildfire.POINTS["PC"].longitude_deg)<0.00001: 
+                        break
+
                 if Wildfire.is_flying[idDrone]:  
                     await drone.action.land()
                     async for in_air_local in drone.telemetry.in_air():
                         if not in_air_local:
                             Wildfire.is_flying[idDrone]=False
                             break
-
-            await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt, 0)
-            async for position in drone.telemetry.position():
-                #Comprueba que llega al punto    
-                if abs(position.latitude_deg-Wildfire.POINTS["PC"].latitude_deg)<0.00001 and abs(position.longitude_deg-Wildfire.POINTS["PC"].longitude_deg)<0.00001: 
-                    break
+                
             
             # Aterriza y carga la batería
             go_home = []
@@ -439,12 +434,34 @@ class Wildfire:
             Wildfire.log_point_matrix.critical(text_log)
             Wildfire.log_rewards.critical(text_log)
             print(text_log)
-        
+
+        def combine_final_status(terms, accum=''):
+            last = (len(terms) == 1)
+            n = len(terms[0])
+            for i in range(n):
+                if accum != '':
+                    item = accum + "-" + terms[0][i] 
+                else:
+                    item = terms[0][i] 
+                if last:
+                    Wildfire.all_final_status.append(item)
+                else:
+                    combine_final_status(terms[1:], item)   
+
         for idDrone in range(NUMDRONES):
             Wildfire.is_flying.append(True)
         
         status = await get_status()
-        while not (status == "M-M" or status == "M-F" or status == "F-F" or status == "F-M"): #TODO AUTOMATIZAR Cada episodio se termina cuando todos los drones mueren
+        
+
+        final_status = ["M","F"]
+        
+        multiple_final_status = []
+        for idDrone in range(NUMDRONES):
+            multiple_final_status.append(final_status)
+        combine_final_status(multiple_final_status)
+        
+        while not (status in Wildfire.all_final_status): # Cada episodio se termina cuando todos los drones mueren
             
             action_index=get_next_action(status, EPSILON)  
             
@@ -472,10 +489,7 @@ class Wildfire:
         for k,v in Wildfire.dicc_raster.items():
             Wildfire.dicc_raster[k] = (Wildfire.dicc_raster[k][0], Wildfire.dicc_raster[k][1], False)
         
-        loop = asyncio.get_event_loop()     # Se reinicia el problema, y todos los drones a la vez se van a PC
-        for drone in Wildfire.drones:
-            asyncio.ensure_future(await reset_episode(drone, episode))
-        loop.run_until_complete() 
+        await reset_episode(episode)
 
         print("Accumulated reward: " + str(round(Wildfire.total_reward,2)))
         Wildfire.log_rewards.info("Accumulated reward of episode " + str(episode) + ": " + str(round(Wildfire.total_reward,2)))
@@ -549,7 +563,6 @@ class Wildfire:
         
         for episode in range(NUM_EPOCHS): 
             Wildfire.update_points_time()
-            #TODO Refactorizar
             arm_list=[]
             for idDrone,drone in enumerate(Wildfire.drones):
                 arm_list.append(drone.action.arm())

@@ -96,7 +96,20 @@ class Wildfire:
     async def get_altitude(drone):
         async for position in drone.telemetry.position():
             return position.relative_altitude_m
-                
+    
+    def combine(terms,res_list, accum=''):
+        last = (len(terms) == 1)
+        n = len(terms[0])
+        for i in range(n):
+            if accum != '':
+                item = accum + "-" + terms[0][i] 
+            else:
+                item = terms[0][i] 
+            if last:
+                res_list.append(item)
+            else:
+                Wildfire.combine(terms[1:], res_list, item)   
+
     def update_constants():    
 
         def update_points():
@@ -131,19 +144,7 @@ class Wildfire:
                 Wildfire.POINTS[points[num_point]] = Point(latitude_point, longitude_point)
                 coordenadas[points[num_point]] = [latitude_point, longitude_point]
                     
-        def update_status():
-            def combine_status(terms, accum=''):
-                last = (len(terms) == 1)
-                n = len(terms[0])
-                for i in range(n):
-                    if accum != '':
-                        item = accum + "-" + terms[0][i] 
-                    else:
-                        item = terms[0][i] 
-                    if last:
-                        STATUS.append(item)
-                    else:
-                        combine_status(terms[1:], item)   
+        def update_status(): 
 
             estados = ["M","F"]
             for point in list(Wildfire.POINTS.keys()):
@@ -154,7 +155,7 @@ class Wildfire:
             for idDrone in range(NUMDRONES):
                 all_estados.append(estados)
 
-            combine_status(all_estados)
+            Wildfire.combine(all_estados, STATUS)
 
         def update_q_values():
             # Si existe el json con los qvalues lo carga
@@ -179,20 +180,7 @@ class Wildfire:
                 else:
                     Wildfire.rewards[status]= 20
                     
-        def update_actions(): 
-            def combine_actions(terms, accum=''):
-                last = (len(terms) == 1)
-                n = len(terms[0])
-                for i in range(n):
-                    if accum != '':
-                        item = accum + "-" + terms[0][i] 
-                    else:
-                        item = terms[0][i] 
-                    if last:
-                        Wildfire.actions_functions.append(item)
-                    else:
-                        combine_actions(terms[1:], item)  
-            
+        def update_actions():   
             actions_drone=[]
             actions_drone.append("act")
             for point in list(Wildfire.POINTS.keys()):
@@ -201,7 +189,7 @@ class Wildfire:
             acciones = []
             for idDrone in range(NUMDRONES):
                 acciones.append(actions_drone)
-            combine_actions(acciones)
+            Wildfire.combine(acciones,Wildfire.actions_functions)
   
         update_points()
         update_status()
@@ -255,7 +243,10 @@ class Wildfire:
             for i in range(idDrone+1,NUMDRONES):  # Recorremos la lista record viendo el ultimo punto de cada dron, si coincide y además hacen la misma accion
                 if(Wildfire.record[idDrone][-1] == Wildfire.record[i][-1] and Wildfire.last_action[idDrone] == Wildfire.last_action[i]):  # No se le recompensa
                     same_action= True 
-                
+
+            if drone_status == "M" or drone_status == "F":
+                pass
+
             if not same_action:
                 if drone_status == "M":
                     total_reward+= -5000
@@ -284,7 +275,13 @@ class Wildfire:
                             
                             total_reward += diff * Wildfire.rewards[drone_status] + Wildfire.rewards[drone_status] + fire_reward
                             Wildfire.points_time[point] = now
-            #Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(total_reward,2)))
+        
+        log_last_actions = ""
+        log_points = ""
+        for i in range(NUMDRONES):
+            log_last_actions += Wildfire.last_action[idDrone] + " "
+            log_points += Wildfire.record[idDrone][-1] + " "
+        Wildfire.log_rewards.info(log_last_actions + log_points + str(round(total_reward,2)))
         return total_reward
 
     async def AIDrone(episode):
@@ -361,12 +358,12 @@ class Wildfire:
 
         async def get_status():  # Formato de estado: Punto Batería (x cada drone)
             status = ""
-            for idDrone, drone in enumerate(Wildfire.drones):   # TODO paralelizar en un futuro
+            for idDrone, drone in enumerate(Wildfire.drones):  
                 battery_status = await get_battery_status(drone)
                 point = Wildfire.record[idDrone][-1]
                 if(battery_status==1):
                     if(point=="M"):
-                        status+= "F"
+                        status+= "F-"
                     if Wildfire.is_flying[idDrone]:
                         Wildfire.record[idDrone].append("M")
                         text_log = "Mayday! Mayday! Drone without battery " + "(M)"
@@ -394,7 +391,6 @@ class Wildfire:
                     await go_to(idDrone, point, multiple_status)
 
             actions=Wildfire.actions_functions[action_index] # Devuelve texto que descifra la accion Ex: act,go_to_B
-            print(actions)
             # Split por comas para cada acción
             actions_list=actions.split("-")
             do_action_list=[]
@@ -407,10 +403,10 @@ class Wildfire:
         async def reset_episode(episode):
 
             async def go_home_func(drone,idDrone):
-                await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt, 0)
+                await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg+idDrone, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt, 0)
                 async for position in drone.telemetry.position():
                     #Comprueba que llega al punto    
-                    if abs(position.latitude_deg-Wildfire.POINTS["PC"].latitude_deg)<0.00001 and abs(position.longitude_deg-Wildfire.POINTS["PC"].longitude_deg)<0.00001: 
+                    if abs(position.latitude_deg-(Wildfire.POINTS["PC"].latitude_deg+idDrone))<0.00001 and abs(position.longitude_deg-Wildfire.POINTS["PC"].longitude_deg)<0.00001: 
                         break
 
                 if Wildfire.is_flying[idDrone]:  
@@ -435,31 +431,17 @@ class Wildfire:
             Wildfire.log_rewards.critical(text_log)
             print(text_log)
 
-        def combine_final_status(terms, accum=''):
-            last = (len(terms) == 1)
-            n = len(terms[0])
-            for i in range(n):
-                if accum != '':
-                    item = accum + "-" + terms[0][i] 
-                else:
-                    item = terms[0][i] 
-                if last:
-                    Wildfire.all_final_status.append(item)
-                else:
-                    combine_final_status(terms[1:], item)   
-
         for idDrone in range(NUMDRONES):
             Wildfire.is_flying.append(True)
         
         status = await get_status()
         
-
         final_status = ["M","F"]
         
         multiple_final_status = []
         for idDrone in range(NUMDRONES):
             multiple_final_status.append(final_status)
-        combine_final_status(multiple_final_status)
+        Wildfire.combine(multiple_final_status, Wildfire.all_final_status)
         
         while not (status in Wildfire.all_final_status): # Cada episodio se termina cuando todos los drones mueren
             

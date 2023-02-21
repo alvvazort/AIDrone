@@ -1,0 +1,108 @@
+2023-02-21 10:40:47,435 INFO Creation of log actions_states
+2023-02-21 10:41:15,709 INFO Drone 1 going to A with 100.0 percentage at 10:41:15 (PC10)
+2023-02-21 10:41:15,739 INFO Drone 0 going to A with 100.0 percentage at 10:41:15 (PC10)
+2023-02-21 10:42:15,738 INFO Drone 0 going to A with 100.0 percentage at 10:42:15 (A10)
+2023-02-21 10:42:19,969 INFO Drone 1 monitoring point A with 100.0 percentage at 10:42:19 (A10)
+2023-02-21 10:42:46,222 INFO Drone 0 going to A with 99.0 percentage at 10:42:46 (A10)
+2023-02-21 10:42:50,656 INFO Drone 1 monitoring point A with 99.0 percentage at 10:42:50 (A10)
+2023-02-21 10:43:15,167 INFO Drone 0 going to A with 95.0 percentage at 10:43:15 (A9)
+2023-02-21 10:43:20,195 INFO Drone 1 monitoring point A with 94.0 percentage at 10:43:20 (A9)
+2023-02-21 10:43:44,610 INFO Drone 0 monitoring point A with 90.0 percentage at 10:43:44 (A9)
+2023-02-21 10:43:49,056 INFO Drone 1 monitoring point A with 89.0 percentage at 10:43:49 (A9)
+2023-02-21 10:44:13,937 INFO Drone 0 monitoring point A with 85.0 percentage at 10:44:13 (A9)
+2023-02-21 10:44:17,966 INFO Drone 1 monitoring point A with 85.0 percentage at 10:44:17 (A8)
+2023-02-21 10:44:40,779 INFO Drone 0 monitoring point A with 81.0 percentage at 10:44:40 (A8)
+2023-02-21 10:44:44,808 INFO Drone 1 monitoring point A with 80.0 percentage at 10:44:44 (A8)
+2023-02-21 10:45:09,486 INFO Drone 0 going to B with 76.0 percentage at 10:45:09 (A8)
+2023-02-21 10:45:13,420 INFO Drone 1 monitoring point A with 75.0 percentage at 10:45:13 (A8)
+2023-02-21 10:45:45,132 INFO Drone 0 monitoring point B with 70.0 percentage at 10:45:45 (B7)
+2023-02-21 10:45:49,644 INFO Drone 1 monitoring point A with 69.0 percentage at 10:45:49 (A7)
+2023-02-21 10:46:08,093 INFO Drone 0 monitoring point B with 66.0 percentage at 10:46:08 (B7)
+2023-02-21 10:46:11,826 INFO Drone 1 monitoring point A with 65.0 percentage at 10:46:11 (A7)
+2023-02-21 10:46:34,144 INFO Drone 0 monitoring point B with 61.0 percentage at 10:46:34 (B6)
+2023-02-21 10:46:38,462 INFO Drone 1 monitoring point A with 61.0 percentage at 10:46:38 (A6)
+2023-02-21 10:47:01,066 INFO Drone 0 monitoring point B with 57.0 percentage at 10:47:01 (B6)
+2023-02-21 10:47:04,802 INFO Drone 1 monitoring point A with 56.0 percentage at 10:47:04 (A6)
+2023-02-21 10:47:24,421 INFO Drone 0 monitoring point B with 53.0 percentage at 10:47:24 (B5)
+2023-02-21 10:47:29,134 INFO Drone 1 monitoring point A with 52.0 percentage at 10:47:29 (A5)
+2023-02-21 10:47:48,863 INFO Drone 0 monitoring point B with 49.0 percentage at 10:47:48 (B5)
+2023-02-21 10:47:52,403 INFO Drone 1 monitoring point A with 48.0 percentage at 10:47:52 (A5)
+2023-02-21 10:48:11,532 INFO Drone 0 monitoring point B with 45.0 percentage at 10:48:11 (B4)
+2023-02-21 10:48:14,783 INFO Drone 1 monitoring point A with 44.0 percentage at 10:48:14 (A4)
+2023-02-21 10:48:33,529 INFO Drone 0 monitoring point B with 41.0 percentage at 10:48:33 (B4)
+2023-02-21 10:48:37,458 INFO Drone 1 monitoring point A with 40.0 percentage at 10:48:37 (A4)
+2023-02-21 10:49:00,551 INFO Drone 0 monitoring point B with 36.0 percentage at 10:49:00 (B4)
+2023-02-21 10:49:05,564 INFO Drone 1 monitoring point A with 35.0 percentage at 10:49:05 (A4)
+2023-02-21 10:49:27,205 INFO Drone 0 monitoring point B with 31.0 percentage at 10:49:27 (B3)
+2023-02-21 10:49:32,019 INFO Drone 1 monitoring point A with 31.0 percentage at 10:49:32 (A3)
+2023-02-21 10:49:51,753 INFO Drone 0 monitoring point B with 27.0 percentage at 10:49:51 (B3)
+2023-02-21 10:49:56,477 INFO Drone 1 monitoring point A with 27.0 percentage at 10:49:56 (A3)
+2023-02-21 10:50:17,628 INFO Drone 0 monitoring point B with 23.0 percentage at 10:50:17 (B2)
+2023-02-21 10:50:20,288 INFO Drone 1 monitoring point A with 22.0 percentage at 10:50:20 (A2)
+2023-02-21 10:50:43,974 INFO Drone 0 monitoring point B with 18.0 percentage at 10:50:43 (B2)
+2023-02-21 10:50:48,004 INFO Drone 1 monitoring point A with 17.0 percentage at 10:50:48 (A2)
+2023-02-21 10:51:00,797 INFO Mayday! Mayday! Drone without battery (M)
+2023-02-21 10:51:06,434 INFO Mayday! Mayday! Drone without battery (M)
+2023-02-21 10:53:46,254 CRITICAL Starting new episode - Episode 1
+2023-02-21 10:54:03,446 INFO Drone 1 going to A with 100.0 percentage at 10:54:03 (PC10)
+2023-02-21 10:54:03,470 INFO Drone 0 going to A with 100.0 percentage at 10:54:03 (PC10)
+2023-02-21 10:55:18,130 INFO Drone 0 going to A with 100.0 percentage at 10:55:18 (A10)
+2023-02-21 10:55:22,872 INFO Drone 1 monitoring point A with 100.0 percentage at 10:55:22 (A10)
+2023-02-21 10:55:59,372 INFO Drone 1 monitoring point A with 99.0 percentage at 10:55:59 (A10)
+2023-02-21 10:55:59,402 INFO Drone 0 going to A with 99.0 percentage at 10:55:59 (A10)
+2023-02-21 10:56:20,044 INFO Drone 0 going to A with 96.0 percentage at 10:56:20 (A10)
+2023-02-21 10:56:24,876 INFO Drone 1 monitoring point A with 96.0 percentage at 10:56:24 (A10)
+2023-02-21 10:56:52,649 INFO Drone 0 monitoring point A with 92.0 percentage at 10:56:52 (A9)
+2023-02-21 10:56:57,934 INFO Drone 1 monitoring point A with 92.0 percentage at 10:56:57 (A9)
+2023-02-21 10:57:21,721 INFO Drone 0 monitoring point A with 88.0 percentage at 10:57:21 (A9)
+2023-02-21 10:57:26,950 INFO Drone 1 going to D with 88.0 percentage at 10:57:26 (A9)
+2023-02-21 10:58:09,368 INFO Drone 0 monitoring point A with 82.0 percentage at 10:58:09 (A8)
+2023-02-21 10:58:14,148 INFO Drone 1 monitoring point D with 82.0 percentage at 10:58:14 (D8)
+2023-02-21 10:58:35,654 INFO Drone 0 monitoring point A with 79.0 percentage at 10:58:35 (A8)
+2023-02-21 10:58:40,693 INFO Drone 1 monitoring point D with 78.0 percentage at 10:58:40 (D8)
+2023-02-21 10:59:06,433 INFO Drone 0 monitoring point A with 75.0 percentage at 10:59:06 (A8)
+2023-02-21 10:59:12,175 INFO Drone 1 monitoring point D with 74.0 percentage at 10:59:12 (D7)
+2023-02-21 10:59:38,542 INFO Drone 0 monitoring point A with 71.0 percentage at 10:59:38 (A7)
+2023-02-21 10:59:43,295 INFO Drone 1 monitoring point D with 70.0 percentage at 10:59:43 (D7)
+2023-02-21 11:00:09,108 INFO Drone 0 monitoring point A with 67.0 percentage at 11:00:09 (A7)
+2023-02-21 11:00:15,038 INFO Drone 1 going to PC with 67.0 percentage at 11:00:15 (D7)
+2023-02-21 11:01:24,786 INFO Drone 0 going to D with 58.0 percentage at 11:01:24 (A6)
+2023-02-21 11:01:30,222 INFO Drone 1 going to C with 58.0 percentage at 11:01:30 (PC6)
+2023-02-21 11:02:29,052 INFO Drone 0 monitoring point D with 50.0 percentage at 11:02:29 (D5)
+2023-02-21 11:02:34,384 INFO Drone 1 monitoring point C with 49.0 percentage at 11:02:34 (C5)
+2023-02-21 11:03:02,032 INFO Drone 0 monitoring point D with 46.0 percentage at 11:03:02 (D5)
+2023-02-21 11:03:07,457 INFO Drone 1 monitoring point C with 45.0 percentage at 11:03:07 (C5)
+2023-02-21 11:03:30,255 INFO Drone 0 monitoring point D with 42.0 percentage at 11:03:30 (D4)
+2023-02-21 11:03:35,195 INFO Drone 1 monitoring point C with 42.0 percentage at 11:03:35 (C4)
+2023-02-21 11:04:02,243 INFO Drone 0 monitoring point D with 38.0 percentage at 11:04:02 (D4)
+2023-02-21 11:04:07,379 INFO Drone 1 monitoring point C with 38.0 percentage at 11:04:07 (C4)
+2023-02-21 11:04:36,416 INFO Drone 0 monitoring point D with 34.0 percentage at 11:04:36 (D3)
+2023-02-21 11:04:42,137 INFO Drone 1 monitoring point C with 33.0 percentage at 11:04:42 (C3)
+2023-02-21 11:05:11,912 INFO Drone 0 going to B with 29.0 percentage at 11:05:11 (D3)
+2023-02-21 11:05:17,751 INFO Drone 1 going to C with 28.0 percentage at 11:05:17 (C3)
+2023-02-21 11:06:04,404 INFO Drone 0 monitoring point B with 22.0 percentage at 11:06:04 (B2)
+2023-02-21 11:06:09,628 INFO Drone 1 monitoring point C with 22.0 percentage at 11:06:09 (C2)
+2023-02-21 11:06:34,955 INFO Drone 0 monitoring point B with 18.0 percentage at 11:06:34 (B2)
+2023-02-21 11:06:40,451 INFO Drone 1 monitoring point C with 18.0 percentage at 11:06:40 (C2)
+2023-02-21 11:06:52,699 INFO Mayday! Mayday! Drone without battery (M)
+2023-02-21 11:06:57,964 INFO Mayday! Mayday! Drone without battery (M)
+2023-02-21 11:09:53,882 CRITICAL Starting new episode - Episode 2
+2023-02-21 11:10:07,646 CRITICAL Starting new episode - Episode 3
+2023-02-21 11:10:20,087 CRITICAL Starting new episode - Episode 4
+2023-02-21 11:10:31,650 CRITICAL Starting new episode - Episode 5
+2023-02-21 11:10:42,298 CRITICAL Starting new episode - Episode 6
+2023-02-21 11:10:52,830 CRITICAL Starting new episode - Episode 7
+2023-02-21 11:11:03,274 CRITICAL Starting new episode - Episode 8
+2023-02-21 11:11:13,918 CRITICAL Starting new episode - Episode 9
+2023-02-21 11:11:25,022 CRITICAL Starting new episode - Episode 10
+2023-02-21 11:11:42,177 INFO Drone 0 charging battery at PC with 16.0 percentage at 11:11:42 (PC2)
+2023-02-21 11:11:56,338 CRITICAL Starting new episode - Episode 11
+2023-02-21 11:12:05,490 CRITICAL Starting new episode - Episode 12
+2023-02-21 11:12:17,392 CRITICAL Starting new episode - Episode 13
+2023-02-21 11:12:27,927 CRITICAL Starting new episode - Episode 14
+2023-02-21 11:12:51,326 CRITICAL Starting new episode - Episode 15
+2023-02-21 11:13:12,398 CRITICAL Starting new episode - Episode 16
+2023-02-21 11:13:33,774 CRITICAL Starting new episode - Episode 17
+2023-02-21 11:13:54,298 CRITICAL Starting new episode - Episode 18
+2023-02-21 11:14:14,280 CRITICAL Starting new episode - Episode 19
+2023-02-21 11:14:27,750 CRITICAL Starting new episode - Episode 20

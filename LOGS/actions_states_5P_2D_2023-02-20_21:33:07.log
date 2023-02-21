@@ -1,7 +1,0 @@
-2023-02-20 21:33:07,397 INFO Creation of log actions_states
-2023-02-20 21:33:25,445 INFO Mayday! Mayday! Drone without battery (M)
-2023-02-20 21:33:29,910 INFO Drone 0 acting on point PC with 68.0 percentage at 21:33:29 (PC7)
-2023-02-20 21:33:32,223 INFO Drone 0 trying to land, still in air. Still 61.97 from ground.
-2023-02-20 21:34:13,657 INFO Drone 0 trying to land, still in air. Still 32.1 from ground.
-2023-02-20 21:34:39,858 INFO Drone 0 trying to land, still in air. Still 4.64 from ground.
-2023-02-20 21:34:53,150 INFO Drone 0 charging battery at PC with 35.0 percentage at 21:34:53 (PC7)

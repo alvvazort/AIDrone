@@ -246,6 +246,7 @@ class Wildfire:
 
             if drone_status == "M":
                 total_reward+= -5000
+                Wildfire.record[idDrone].append("M")        #Unicamente se añade el estado M cuando se cobra negativamente la recompensa
             elif drone_status == "F":
                 total_reward+= 0
             else:
@@ -278,9 +279,9 @@ class Wildfire:
         for i in range(NUMDRONES):
             log_last_actions += str(Wildfire.last_action[i]) + "-"
             log_points += str(Wildfire.record[i][-1]) + "-"
-            if i == NUMDRONES-1:
-                log_last_actions[:-1]
-                log_points[:-1]
+
+        log_last_actions[:-1]
+        log_points[:-1]
         Wildfire.log_rewards.info(log_last_actions + " " + log_points + " " + str(round(total_reward,2)))
         return total_reward
 
@@ -295,8 +296,12 @@ class Wildfire:
                 await drone.action.arm()
                 print("-- Taking off")
                 await drone.action.takeoff()
-                
-            await drone.action.goto_location(point.latitude_deg, point.longitude_deg, Wildfire.flying_alt + idDrone, 0)
+
+            if point == "PC":
+                await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg+idDrone/20000, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt + idDrone, 0)
+            else:
+                await drone.action.goto_location(point.latitude_deg, point.longitude_deg, Wildfire.flying_alt + idDrone, 0)
+
             Wildfire.is_flying[idDrone]=True
 
             battery = round(await Wildfire.get_battery(drone)*100,2)    
@@ -365,7 +370,6 @@ class Wildfire:
                     if(point=="M"):
                         status+= "F-"
                     elif Wildfire.is_flying[idDrone]:
-                        Wildfire.record[idDrone].append("M")
                         text_log = "Mayday! Mayday! Drone without battery " + "(M)"
                         Wildfire.log_actions_states.info(text_log)
                         print(text_log)
@@ -408,10 +412,10 @@ class Wildfire:
         async def reset_episode(episode):
 
             async def go_home_func(drone,idDrone):
-                await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg+idDrone/10000, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt, 0)
+                await drone.action.goto_location(Wildfire.POINTS["PC"].latitude_deg+idDrone/20000, Wildfire.POINTS["PC"].longitude_deg, Wildfire.flying_alt, 0)
                 async for position in drone.telemetry.position():
                     #Comprueba que llega al punto    
-                    if abs(position.latitude_deg-(Wildfire.POINTS["PC"].latitude_deg+idDrone/10000))<0.00001 and abs(position.longitude_deg-Wildfire.POINTS["PC"].longitude_deg)<0.00001: 
+                    if abs(position.latitude_deg-(Wildfire.POINTS["PC"].latitude_deg+idDrone/20000))<0.00001 and abs(position.longitude_deg-Wildfire.POINTS["PC"].longitude_deg)<0.00001: 
                         break
 
                 if Wildfire.is_flying[idDrone]:  
@@ -436,7 +440,7 @@ class Wildfire:
             Wildfire.log_rewards.critical(text_log)
             print(text_log)
             Wildfire.record = []
-            for idDrone in NUMDRONES:
+            for idDrone in range(NUMDRONES):
                 Wildfire.record.append(["PC"])
                 
         for idDrone in range(NUMDRONES):

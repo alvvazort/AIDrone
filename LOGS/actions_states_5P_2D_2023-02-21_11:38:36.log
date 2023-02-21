@@ -1,0 +1,11 @@
+2023-02-21 11:38:36,245 INFO Creation of log actions_states
+2023-02-21 11:39:14,266 INFO Drone 1 going to C with 100.0 percentage at 11:39:14 (PC10)
+2023-02-21 11:39:14,283 INFO Drone 0 going to D with 100.0 percentage at 11:39:14 (PC10)
+2023-02-21 11:40:26,871 INFO Drone 1 going to E with 51.0 percentage at 11:40:26 (C5)
+2023-02-21 11:40:26,876 INFO Drone 0 going to E with 51.0 percentage at 11:40:26 (D6)
+2023-02-21 11:41:09,338 INFO Drone 1 monitoring point E with 21.0 percentage at 11:41:09 (E2)
+2023-02-21 11:41:09,341 INFO Drone 0 monitoring point E with 21.0 percentage at 11:41:09 (E3)
+2023-02-21 11:41:23,699 INFO Mayday! Mayday! Drone without battery (M)
+2023-02-21 11:41:28,474 INFO Mayday! Mayday! Drone without battery (M)
+2023-02-21 11:44:28,534 CRITICAL Starting new episode - Episode 1
+2023-02-21 11:44:47,057 INFO Drone 1 going to C with 100.0 percentage at 11:44:47 (PC10)

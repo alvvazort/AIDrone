@@ -445,7 +445,7 @@ class Wildfire:
         Wildfire.pretty_print_dicc_raster()
         Wildfire.record.append([])
         Wildfire.last_action.append([])
-        for episode in range(20):
+        for episode in range(200):
             Wildfire.update_points_time()
             Wildfire.record[0].append("PC")
             print("-- Arming")

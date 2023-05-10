@@ -1,0 +1,12 @@
+2023-02-21 11:17:12,516 INFO Creation of log rewards
+2023-02-21 11:17:17,526 INFO Action Point Reward
+2023-02-21 11:18:37,373 INFO go_to-go_to- A-A- 20
+2023-02-21 11:19:30,130 INFO act-go_to- A-E- 82.67
+2023-02-21 11:20:03,771 INFO act-act- M-M- -10000
+2023-02-21 11:22:59,275 CRITICAL Starting new episode - Episode 1
+2023-02-21 11:22:59,276 INFO Accumulated reward of episode 0: -9897.33
+2023-02-21 11:23:25,041 INFO act-act- PC-PC- 0
+2023-02-21 11:24:33,073 INFO go_to-act- B-PC- 20
+2023-02-21 11:24:58,207 INFO act-act- B-PC- 59.67
+2023-02-21 11:25:18,664 INFO act-act- B-PC- 26.67
+2023-02-21 11:25:41,747 INFO act-act- M-PC- -5000

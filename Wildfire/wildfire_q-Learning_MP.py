@@ -14,6 +14,8 @@ import os
 import json
 import fire
 import logging
+from colorama import Fore, Back, Style
+
 
 PORT = 14540
 NUMPOINTS = 5
@@ -26,6 +28,8 @@ class Wildfire:
 
     def setup_logger(name, log_file, level=logging.INFO):
         """To setup as many loggers as you want"""
+        if(not os.path.exists("LOGS")):
+            os.mkdir("LOGS")
         if os.path.isfile(log_file):
             created_at=open(log_file).readline().rstrip().split(",")[0].replace(" ","_")
             shutil.copy(log_file, "LOGS/"+name+"_"+str(NUMPOINTS)+"P_"+created_at+".log")
@@ -133,8 +137,6 @@ class Wildfire:
         
         def update_q_values():
             # Si existe el json con los qvalues lo carga
-            if(not os.path.exists("JSON")):
-                os.mkdir("JSON")
             if os.path.isfile("JSON/q_values_"+str(NUMPOINTS)+"P.json"):
                 with open("JSON/q_values_"+str(NUMPOINTS)+"P.json") as json_file:
                     Wildfire.q_values = json.load(json_file)
@@ -169,24 +171,36 @@ class Wildfire:
 
     def pretty_print_dicc_raster():
         dimension = math.ceil(math.sqrt(NUMPOINTS*3))
-        matrix_razer = np.empty((dimension, dimension), dtype=str)
+        matrix_razer = np.empty((dimension, dimension), dtype="<U10")
         try:
             drone_point = Wildfire.record[0][-1]        #TODO CAMBIAR 0 POR IDDRONE FUTURO
         except:
             pass
         for k,v in Wildfire.dicc_raster.items():
             state=""
-            if "Hueco" in k:
-                state="🌳"
-            else:
-                state=k
-            if v[2]:
-                state="🔥"
-            try: 
-                if drone_point == k:
-                    state = "🚁"
-            except:
-                pass
+            
+
+            if v[2] == True:
+                if "Hueco" in k :
+                    state="🔥🍂"
+                else: # Punto de vigilancia
+                    state=k+"🔥"
+                    try: 
+                        if drone_point == k:
+                            state = k +"🚒"
+                    except:
+                        pass
+            else: # No hay fuego
+                if "Hueco" in k :
+                    state="🌳🌿"
+                else: # Punto de vigilancia
+                    state=k+"🌿"
+                    try: 
+                        if drone_point == k:
+                            state = k +"🚁"
+                    except:
+                        pass
+
             matrix_razer[v[0]][v[1]]=state
         Wildfire.log_point_matrix.info("\n" + str(matrix_razer))
         print(matrix_razer)
@@ -202,7 +216,7 @@ class Wildfire:
             monitorized_time = Wildfire.points_time[point]
             fecha_now = datetime.datetime.strptime(now, '%H:%M:%S')
             fecha_monitorized_time = datetime.datetime.strptime(monitorized_time, '%H:%M:%S')
-            
+            reward = 0.
             diff = (fecha_now - fecha_monitorized_time)/ timedelta(minutes=1) 
 
             if Wildfire.last_action[idDrone] == "go_to":
@@ -212,17 +226,15 @@ class Wildfire:
                     reward = Wildfire.rewards[status]
                 Wildfire.count_actions = 0
             else:
-                Wildfire.count_actions+=1
-                if(status == "PC10"):
-                    reward= -50
-                else: 
+                if point != "PC":
+                    Wildfire.count_actions+=1
                     fire_reward = 0
                     if Wildfire.dicc_raster[point][2]:
                         fire_reward = 20 / (1 + Wildfire.count_actions/5)
                     
                     reward = diff * Wildfire.rewards[status] + Wildfire.rewards[status] + fire_reward
-                Wildfire.points_time[point] = now
-                Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(reward,2)))
+                    Wildfire.points_time[point] = now
+                    Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(reward,2)))
             return reward
 
     async def AIDrone(idDrone,drone, episode):
@@ -306,8 +318,9 @@ class Wildfire:
                     return "F"
                 if is_flying:
                     Wildfire.record[idDrone].append("M")
-                    print("Mayday! Mayday! Drone without battery " + "(M)")
-
+                    text_log = "Mayday! Mayday! Drone without battery " + "(M)"
+                    Wildfire.log_actions_states.info(text_log)
+                    print(text_log)
                     return "M"
             
             status = point+str(battery_status)
@@ -348,9 +361,11 @@ class Wildfire:
                             break
                         
             await asyncio.sleep(4)
-            print("Starting new episode - Episode " + str(episode+1))
-
-        
+            text_log = "Starting new episode - Episode " + str(episode+1)
+            Wildfire.log_actions_states.critical(text_log)
+            Wildfire.log_point_matrix.critical(text_log)
+            Wildfire.log_rewards.critical(text_log)
+            print(text_log)
         global is_flying
         is_flying = True
 
@@ -386,13 +401,13 @@ class Wildfire:
         for k,v in Wildfire.dicc_raster.items():
             Wildfire.dicc_raster[k] = (Wildfire.dicc_raster[k][0], Wildfire.dicc_raster[k][1], False)
         
-        print("Accumulated reward: " + str(round(Wildfire.total_reward,2)))
         await reset_episode(drone, episode)
+        print("Accumulated reward: " + str(round(Wildfire.total_reward,2)))
         Wildfire.log_rewards.info("Accumulated reward of episode " + str(episode) + ": " + str(round(Wildfire.total_reward,2)))
         Wildfire.total_reward = 0.
             
     async def run_fire():
-        await asyncio.sleep(10)
+        await asyncio.sleep(60)
         fire.start_dicc_fire_time(Wildfire.dicc_raster)
         while(True):    
             fire_points = [(k,v) for k, v in Wildfire.dicc_raster.items() if v[2] == True]
@@ -403,8 +418,6 @@ class Wildfire:
             await asyncio.sleep(60)
 
     async def run():
-        if(not os.path.exists("LOGS")):
-            os.mkdir("LOGS")
         Wildfire.log_rewards.info("Action Point Reward")
 
         print("Drone 0 ready to start routine")

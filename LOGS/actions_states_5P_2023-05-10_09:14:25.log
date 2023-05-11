@@ -1,0 +1,41 @@
+2023-05-10 09:14:25,618 INFO Creation of log actions_states
+2023-05-10 09:14:36,238 INFO Going to E with 100.0 percentage at 09:14:34 (PC10)
+2023-05-10 09:15:02,276 INFO Monitoring point E with 100.0 percentage at 09:15:02 (E10)
+2023-05-10 09:15:18,293 INFO Going to PC with 100.0 percentage at 09:15:16 (E10)
+2023-05-10 09:15:40,323 INFO Acting on point PC with 93.0 percentage at 09:15:40 (PC9)
+2023-05-10 09:15:41,363 INFO Trying to land, still in air. Still 59.24 from ground.
+2023-05-10 09:16:01,391 INFO Trying to land, still in air. Still 29.53 from ground.
+2023-05-10 09:16:21,414 INFO Trying to land, still in air. Still 3.72 from ground.
+2023-05-10 09:16:32,386 INFO Charging battery at PC with 80.0 percentage at 09:16:30 (PC10)
+2023-05-10 09:16:38,391 INFO Going to E with 100.0 percentage at 09:16:36 (PC10)
+2023-05-10 09:17:10,426 INFO Monitoring point E with 100.0 percentage at 09:17:10 (E10)
+2023-05-10 09:17:26,440 INFO Monitoring point E with 100.0 percentage at 09:17:26 (E10)
+2023-05-10 09:17:42,457 INFO Monitoring point E with 94.0 percentage at 09:17:42 (E9)
+2023-05-10 09:17:58,474 INFO Monitoring point E with 89.0 percentage at 09:17:58 (E9)
+2023-05-10 09:18:12,586 INFO Monitoring point E with 84.0 percentage at 09:18:12 (E8)
+2023-05-10 09:18:28,611 INFO Going to A with 80.0 percentage at 09:18:26 (E8)
+2023-05-10 09:18:46,730 INFO Monitoring point A with 73.0 percentage at 09:18:46 (A7)
+2023-05-10 09:19:02,755 INFO Monitoring point A with 68.0 percentage at 09:19:02 (A7)
+2023-05-10 09:19:18,773 INFO Monitoring point A with 62.0 percentage at 09:19:18 (A6)
+2023-05-10 09:19:34,794 INFO Monitoring point A with 57.0 percentage at 09:19:34 (A6)
+2023-05-10 09:19:50,815 INFO Monitoring point A with 52.0 percentage at 09:19:50 (A5)
+2023-05-10 09:20:04,932 INFO Monitoring point A with 47.0 percentage at 09:20:04 (A5)
+2023-05-10 09:20:20,947 INFO Monitoring point A with 41.0 percentage at 09:20:20 (A4)
+2023-05-10 09:20:35,067 INFO Monitoring point A with 37.0 percentage at 09:20:35 (A4)
+2023-05-10 09:20:51,086 INFO Going to PC with 32.0 percentage at 09:20:49 (A3)
+2023-05-10 09:21:13,110 INFO Acting on point PC with 24.0 percentage at 09:21:13 (PC2)
+2023-05-10 09:21:14,250 INFO Trying to land, still in air. Still 58.98 from ground.
+2023-05-10 09:21:34,372 INFO Trying to land, still in air. Still 29.47 from ground.
+2023-05-10 09:21:54,498 INFO Trying to land, still in air. Still 3.65 from ground.
+2023-05-10 09:22:05,475 INFO Charging battery at PC with 20.0 percentage at 09:22:03 (PC9)
+2023-05-10 09:22:11,483 INFO Going to E with 100.0 percentage at 09:22:09 (PC10)
+2023-05-10 09:22:43,629 INFO Monitoring point E with 100.0 percentage at 09:22:43 (E10)
+2023-05-10 09:22:59,649 INFO Going to B with 100.0 percentage at 09:22:57 (E10)
+2023-05-10 09:23:15,763 INFO Monitoring point B with 94.0 percentage at 09:23:15 (B9)
+2023-05-10 09:23:31,787 INFO Monitoring point B with 89.0 percentage at 09:23:31 (B9)
+2023-05-10 09:23:47,803 INFO Going to E with 85.0 percentage at 09:23:45 (B8)
+2023-05-10 09:24:05,822 INFO Monitoring point E with 77.0 percentage at 09:24:05 (E8)
+2023-05-10 09:24:21,842 INFO Monitoring point E with 73.0 percentage at 09:24:21 (E7)
+2023-05-10 09:24:35,952 INFO Monitoring point E with 68.0 percentage at 09:24:35 (E7)
+2023-05-10 09:24:51,969 INFO Monitoring point E with 62.0 percentage at 09:24:51 (E6)
+2023-05-10 09:25:06,091 INFO Monitoring point E with 57.0 percentage at 09:25:06 (E6)

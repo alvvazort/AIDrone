@@ -122,18 +122,15 @@ class Wildfire:
             points = ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","Ñ","O","P","Q","R","S","T","U","V","W","X","Y","Z"]
             
             dimension = math.ceil(math.sqrt(NUMPOINTS*3))
-            #matrix_raster=[]
             index_points=0
             for fila in range(dimension):
                 for columna in range(dimension):
                     fire = False
                     if(((columna+fila*dimension)%3==0 and fila%2==0) or ((columna+fila*dimension)%3==2 and fila%2!=0)) and index_points<NUMPOINTS:      #Esto permite que los puntos aparezcan mas esparcidos en el mapa raster 
                         Wildfire.dicc_raster[points[index_points]]=(fila,columna,fire)
-                        #matrix_raster[fila,columna] = (points[index_points],fire)
                         index_points+=1
                     else:
                         Wildfire.dicc_raster["Hueco"+str(columna+fila*dimension)]=(fila,columna,fire)
-                        #matrix_raster[fila,columna] = ("Hueco",fire)
             
             for num_point in range(NUMPOINTS):
                 coordenada_raster_lat = Wildfire.dicc_raster[points[num_point]][0] 

@@ -25,7 +25,7 @@ def start_fire(dicc_raster):
         wildfire = True
         dicc_raster[key]= origin_fire
         dicc_fire_time[key] = datetime.datetime.now()
-        #print("Wildfire started at " + str(key) + " (" + str(dicc_raster[key][0]) + ", " + str(dicc_raster[key][1]) + ")")
+        
     return dicc_raster
 
 def get_adjacent(dicc_raster, fire_point):
@@ -42,7 +42,6 @@ def fire_propagation(dicc_raster):
             if(np.random.random()<wildfire_propagation and adjacent[1][2] == False):        #Solo se propaga a los no incendiados
                 k = adjacent[0]
                 v = adjacent[1]
-                #print("Wildfire was propagated to point "+k+" ("+str(v[0])+", "+str(v[1])+")")
                 
                 val = (v[0],v[1], True)
                 dicc_raster[k]=val
@@ -51,7 +50,6 @@ def fire_propagation(dicc_raster):
         wildfire_extinguished_time = wildfire_extinguished + ((datetime.datetime.now() - dicc_fire_time[fire_point[0]])/timedelta(minutes=1))*0.005
         if(np.random.random() < wildfire_extinguished_time):
             dicc_raster[fire_point[0]] = (dicc_raster[fire_point[0]][0], dicc_raster[fire_point[0]][1], False)  
-            #print("Wildfire was extinguished at point " + str(fire_point[0]))  
     return dicc_raster
 
 

@@ -225,6 +225,8 @@ class Wildfire:
                 else:
                     reward = Wildfire.rewards[status]
                 Wildfire.count_actions = 0
+                Wildfire.log_rewards.info(Wildfire.last_action[idDrone]+" "+ Wildfire.record[idDrone][-1] + " " + str(round(reward,2)))
+
             else:
                 if point != "PC":
                     Wildfire.count_actions+=1
@@ -256,6 +258,7 @@ class Wildfire:
             text_log="Going to " + name_point + " with " + str(battery) + " percentage at " + str(datetime.datetime.now().strftime('%H:%M:%S')) + " (" + await get_status() + ")"
             print(text_log)
             Wildfire.log_actions_states.info(text_log)
+            
             async for position in drone.telemetry.position():
                 #Comprueba que llega al punto    
                 if abs(position.latitude_deg-point.latitude_deg)<0.00001 and abs(position.longitude_deg-point.longitude_deg)<0.00001: 
